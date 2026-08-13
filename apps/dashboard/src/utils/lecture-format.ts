@@ -12,8 +12,9 @@ export function formatDate(value: string | Date): string {
 	return new Date(value).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 }
 
-export function formatDuration(sec: number | null): string {
-	if (sec == null) return "-";
+export function formatDuration(ms: number | null): string {
+	if (ms == null) return "-";
+	const sec = Math.floor(ms / 1000);
 	const minutes = Math.floor(sec / 60);
 	return `${minutes}:${String(sec % 60).padStart(2, "0")}`;
 }

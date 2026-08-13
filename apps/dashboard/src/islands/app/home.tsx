@@ -1,12 +1,12 @@
 import { useSignal } from "@preact/signals";
 import { Cookies, Slick } from "@webtools/slick-client";
 import { Mic, PanelLeft, Search, SlidersHorizontal } from "lucide-preact";
-import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
+import { useEffect, useRef } from "preact/hooks";
 
 import HomeFilters, { EMPTY_HOME_FILTERS, type HomeFilters as Filters } from "../../components/home-filters.tsx";
 import HomeSubjectsNav from "../../components/home-subjects-nav.tsx";
 import { createClient } from "../../client.ts";
-import { recordSession, restoreRecordSession } from "../../utils/record-session.ts";
+import { recordSession } from "../../utils/record-session.ts";
 import { formatDuration, lectureTitle, STATUS_LABEL } from "../../utils/lecture-format.ts";
 import { readHomeQueryFromBrowser, writeHomeQuery } from "../../utils/home-query.ts";
 import { SessionStatus } from "@magi/shared/types/session";
@@ -31,14 +31,14 @@ type LectureRow = Awaited<ReturnType<typeof loadLectures>>["data"]["rows"][numbe
 	tags?: Pick<TagItem, "id" | "name" | "color">[];
 };
 
-function liveRow(lecture: LectureRow, followSession: boolean): LectureRow {
-	if (!followSession || recordSession.status === "idle" || recordSession.lectureId !== lecture.id) {
-		return lecture.durationSec == null ? { ...lecture, durationSec: 0 } : lecture;
+function liveRow(lecture: LectureRow): LectureRow {
+	if (recordSession.status === "idle" || recordSession.lectureId !== lecture.id) {
+		return lecture;
 	}
 
 	return {
 		...lecture,
-		durationSec: recordSession.elapsedSec,
+		audioMs: recordSession.elapsedSec * 1_000,
 		status: recordSession.status === "paused" ? SessionStatus.PAUSED : SessionStatus.RECORDING,
 	};
 }
@@ -48,7 +48,7 @@ function lectureRowInner(lecture: LectureRow) {
 	return (
 		<>
 			<strong>{lectureTitle(lecture)}</strong>
-			<time>{formatDuration(lecture.durationSec ?? 0)}</time>
+			<time>{formatDuration(lecture.audioMs)}</time>
 			<span class="pill" data-status={lecture.status}>
 				{STATUS_LABEL[lecture.status as SessionStatus] ?? lecture.status}
 			</span>
@@ -131,8 +131,6 @@ export default function Home() {
 	const recTick = useSignal(0);
 	void recTick.value;
 
-	const session = recordSession;
-
 	function syncQuery() {
 		writeHomeQuery({ q: appliedQ.value, subject: subjectFilter.value, filters: filters.value });
 	}
@@ -164,11 +162,6 @@ export default function Home() {
 			error.value = "Impossible de charger le catalogue.";
 		}
 	}
-
-	useLayoutEffect(() => {
-		restoreRecordSession();
-		recTick.value++;
-	}, []);
 
 	useEffect(() => {
 		let wasBusy = recordSession.status !== "idle";
@@ -233,8 +226,8 @@ export default function Home() {
 	const groups = groupLectures(visible, subjects.value);
 	const noneCount = lectures.value.filter((lecture) => !lecture.subjectId).length;
 	const counts = countBySubject(lectures.value);
-	const live = recTick.value > 0;
-	const busy = live && session.status !== "idle";
+	const busy = recordSession.status !== "idle";
+	const locked = recordSession.status === "recording" || recordSession.status === "stopping";
 
 	function setSubjectFilter(value: string) {
 		subjectFilter.value = value;
@@ -258,6 +251,34 @@ export default function Home() {
 		filters.value = { ...draftFilters.value };
 		syncQuery();
 		void load();
+	}
+
+	function renderRow(row: LectureRow) {
+		const inner = lectureRowInner(row);
+		const selected = recordSession.lectureId === row.id;
+
+		if (row.status === SessionStatus.COMPLETED) {
+			return <a class="lecture-row" href={`/l/${row.id}`}>{inner}</a>;
+		}
+
+		if (row.status === SessionStatus.PAUSED) {
+			return (
+				<button
+					type="button"
+					class="lecture-row"
+					aria-current={selected ? "true" : undefined}
+					disabled={locked && !selected}
+					aria-label={selected
+						? `Désélectionner : ${lectureTitle(row)}`
+						: `Reprendre la main : ${lectureTitle(row)}`}
+					onClick={() => selected ? recordSession.detach() : void recordSession.attach(row.id)}
+				>
+					{inner}
+				</button>
+			);
+		}
+
+		return <div class="lecture-row" aria-current={selected ? "true" : undefined}>{inner}</div>;
 	}
 
 	return (
@@ -311,9 +332,7 @@ export default function Home() {
 						aria-label="Nouveau cours"
 						disabled={busy}
 						onClick={async () => {
-							const selected = subjectFilter.value;
-							const subjectId = selected !== "all" && selected !== "none" ? selected : null;
-							await session.start(subjectId);
+							await recordSession.start();
 							void load();
 						}}
 					>
@@ -331,7 +350,9 @@ export default function Home() {
 				)}
 			</form>
 
-			{error.value && <p class="error">{error.value}</p>}
+			{(error.value || (!busy && recordSession.error)) && (
+				<p class="error">{error.value || recordSession.error}</p>
+			)}
 
 			<div>
 				{subjectsOpen.value && (
@@ -368,44 +389,7 @@ export default function Home() {
 									: "Non classé"}
 							</h2>
 							<ol>
-								{group.rows.map((lecture) => {
-									const row = liveRow(lecture, live);
-									const inner = lectureRowInner(row);
-									const selected = live && recordSession.status !== "idle" &&
-										recordSession.lectureId === lecture.id;
-									return (
-										<li key={lecture.id}>
-											{row.status === SessionStatus.COMPLETED && (
-												<a class="lecture-row" href={`/l/${lecture.id}`}>{inner}</a>
-											)}
-											{row.status === SessionStatus.PAUSED && (
-												<button
-													type="button"
-													class="lecture-row"
-													aria-current={selected ? "true" : undefined}
-													aria-label={selected
-														? `Désélectionner : ${lectureTitle(row)}`
-														: `Enregistrement en pause : ${lectureTitle(row)}`}
-													onClick={() => {
-														if (selected) recordSession.detach();
-														else recordSession.attach(row.id, row.durationSec ?? 0);
-													}}
-												>
-													{inner}
-												</button>
-											)}
-											{row.status !== SessionStatus.COMPLETED &&
-												row.status !== SessionStatus.PAUSED && (
-												<div
-													class="lecture-row"
-													aria-current={selected ? "true" : undefined}
-												>
-													{inner}
-												</div>
-											)}
-										</li>
-									);
-								})}
+								{group.rows.map((lecture) => <li key={lecture.id}>{renderRow(liveRow(lecture))}</li>)}
 							</ol>
 						</section>
 					))}

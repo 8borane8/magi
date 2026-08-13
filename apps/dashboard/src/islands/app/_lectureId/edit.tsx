@@ -167,7 +167,7 @@ export default function LectureEdit({ data: dataJson }: { data: string }) {
 							Annuler
 						</button>
 						<button type="submit" class="btn btn-primary" disabled={saving.value}>
-							{saving.value ? "Enregistrement…" : "Enregistrer"}
+							{saving.value ? "Enregistrement..." : "Enregistrer"}
 						</button>
 					</footer>
 				</form>

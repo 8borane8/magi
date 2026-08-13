@@ -60,7 +60,7 @@ export default {
 							</div>
 							<div>
 								<dt>Durée</dt>
-								<dd>{formatDuration(lecture.durationSec)}</dd>
+								<dd>{formatDuration(lecture.audioMs)}</dd>
 							</div>
 							<div>
 								<dt>Audio</dt>
@@ -111,7 +111,7 @@ export default {
 				<footer>
 					<LectureAudio
 						src={`${nodeUrl}/lectures/${lecture.id}/record`}
-						durationSec={lecture.durationSec}
+						audioMs={lecture.audioMs}
 					/>
 				</footer>
 			</section>

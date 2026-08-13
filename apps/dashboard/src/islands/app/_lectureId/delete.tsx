@@ -71,7 +71,7 @@ export default function LectureDelete({ lectureId, title }: { lectureId: string;
 						Annuler
 					</button>
 					<button type="button" class="btn btn-danger" disabled={pending.value} onClick={confirmDelete}>
-						{pending.value ? "Suppression…" : "Supprimer"}
+						{pending.value ? "Suppression..." : "Supprimer"}
 					</button>
 				</footer>
 			</dialog>

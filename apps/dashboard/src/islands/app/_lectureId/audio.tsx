@@ -4,23 +4,23 @@ import { useEffect, useRef } from "preact/hooks";
 
 import { formatDuration } from "../../../utils/lecture-format.ts";
 
-function totalDuration(audio: HTMLAudioElement, fallbackSec: number | null): number {
+function totalDuration(audio: HTMLAudioElement, fallbackMs: number): number {
 	const fromFile = audio.duration;
 	if (Number.isFinite(fromFile) && fromFile > 0) return fromFile;
-	return fallbackSec ?? 0;
+	return fallbackMs / 1000;
 }
 
 export default function LectureAudio({
 	src,
-	durationSec,
+	audioMs,
 }: {
 	src: string;
-	durationSec: number | null;
+	audioMs: number;
 }) {
 	const audioRef = useRef<HTMLAudioElement>(null);
 	const playing = useSignal(false);
 	const currentSec = useSignal(0);
-	const totalSec = useSignal(durationSec ?? 0);
+	const totalSec = useSignal(audioMs / 1000);
 
 	useEffect(() => {
 		const audio = audioRef.current;
@@ -28,7 +28,7 @@ export default function LectureAudio({
 
 		const sync = () => {
 			currentSec.value = audio.currentTime;
-			totalSec.value = totalDuration(audio, durationSec);
+			totalSec.value = totalDuration(audio, audioMs);
 		};
 
 		audio.addEventListener("timeupdate", sync);
@@ -51,7 +51,7 @@ export default function LectureAudio({
 			audio.removeEventListener("loadedmetadata", sync);
 			audio.removeEventListener("durationchange", sync);
 		};
-	}, [durationSec]);
+	}, [audioMs]);
 
 	function toggle() {
 		const audio = audioRef.current;
@@ -97,7 +97,7 @@ export default function LectureAudio({
 				onInput={seek}
 			/>
 			<time class="lecture-audio-time">
-				{formatDuration(Math.floor(current))} / {formatDuration(total > 0 ? Math.floor(total) : null)}
+				{formatDuration(current * 1000)} / {formatDuration(total > 0 ? total * 1000 : null)}
 			</time>
 		</div>
 	);

@@ -1,7 +1,9 @@
-import { join } from "@std/path";
+import { SessionStatus } from "@magi/shared/types/session";
 import { importModels, Sequelize } from "@sequelize/core";
 import { SqliteDialect } from "@sequelize/sqlite3";
+import { Lecture } from "@/models/lecture.ts";
 import { config } from "@/config.ts";
+import { join } from "@std/path";
 
 await Deno.mkdir(config.lecturesDir, { recursive: true });
 
@@ -14,11 +16,11 @@ const sequelize = new Sequelize({
 await sequelize.authenticate();
 await sequelize.sync({ alter: true });
 
+// No client owns a recording after a process restart.
+await Lecture.update({ status: SessionStatus.PAUSED }, { where: { status: SessionStatus.RECORDING } });
+
 import { HttpServer } from "@webtools/expressapi";
 import mainRouter from "@/routes/index.ts";
-import * as recording from "@/services/recording.ts";
-
-await recording.pauseOrphanedRecordings();
 
 const httpServer = new HttpServer()
 	.onError((error) => {

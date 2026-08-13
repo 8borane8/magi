@@ -113,7 +113,7 @@ Comportements notables côté client :
 ### Bibliothèque (disponible)
 
 Accueil avec liste des cours, recherche plein texte, filtres (statut, étiquette, dates), navigation par matière. Lecture
-audio des segments enregistrés. Page cours pour les sessions terminées (métadonnées, notes, lecteur audio).
+audio enregistré. Page cours pour les sessions terminées (métadonnées, notes, lecteur audio).
 
 ### Matières et étiquettes (disponible)
 

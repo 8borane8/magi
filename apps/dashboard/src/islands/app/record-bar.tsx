@@ -1,36 +1,38 @@
 import { Pause, Play, Square } from "lucide-preact";
 import { useSignal } from "@preact/signals";
-import { useEffect, useLayoutEffect } from "preact/hooks";
+import { useEffect } from "preact/hooks";
 
 import { formatDuration } from "../../utils/lecture-format.ts";
-import { recordSession, restoreRecordSession } from "../../utils/record-session.ts";
+import { recordSession } from "../../utils/record-session.ts";
 
-const RECORDING_LABEL: Record<typeof recordSession.status, string | null> = {
-	idle: null,
+const STATUS_LABEL = {
 	recording: "Enregistrement en cours",
 	paused: "En pause",
-	flushing: "Envoi des derniers fragments…",
-};
+	stopping: "Envoi des derniers fragments...",
+} as const;
 
 export default function RecordBar() {
 	const tick = useSignal(0);
 	void tick.value;
 
-	useLayoutEffect(() => {
-		restoreRecordSession();
-		tick.value++;
-	}, []);
+	const { status, offline, error, elapsedSec } = recordSession;
 
 	useEffect(() => {
+		const root = document.getElementById("root");
+
+		function sync() {
+			tick.value++;
+			root?.toggleAttribute("data-recording", recordSession.status !== "idle");
+		}
+
 		function onBeforeUnload(event: BeforeUnloadEvent) {
 			if (recordSession.status === "idle") return;
 			event.preventDefault();
 		}
 
+		sync();
 		globalThis.addEventListener("beforeunload", onBeforeUnload);
-		const unsubscribe = recordSession.subscribe(() => {
-			tick.value++;
-		});
+		const unsubscribe = recordSession.subscribe(sync);
 
 		return () => {
 			unsubscribe();
@@ -38,53 +40,45 @@ export default function RecordBar() {
 		};
 	}, []);
 
-	if (tick.value === 0 || recordSession.status === "idle") {
-		return <div id="record-bar" data-idle="true"></div>;
-	}
-
-	const label = RECORDING_LABEL[recordSession.status];
+	if (status === "idle") return <div id="record-bar" data-idle="true"></div>;
 
 	return (
-		<div id="record-bar">
+		<div id="record-bar" data-offline={offline ? "true" : undefined}>
 			<p>
-				<span>{label}</span>
-				<time>{formatDuration(recordSession.elapsedSec)}</time>
+				<span>{offline ? "Hors ligne, envoi dès que possible" : STATUS_LABEL[status]}</span>
+				<time>{formatDuration(elapsedSec * 1_000)}</time>
 			</p>
 			<menu>
-				{recordSession.status === "paused" && (
+				{status === "paused" && (
+					<li>
+						<button type="button" class="btn" aria-label="Reprendre" onClick={() => recordSession.resume()}>
+							<Play size={16} aria-hidden="true" />
+							<span>Reprendre</span>
+						</button>
+					</li>
+				)}
+				{status === "recording" && (
+					<li>
+						<button type="button" class="btn" aria-label="Pause" onClick={() => recordSession.pause()}>
+							<Pause size={16} aria-hidden="true" />
+							<span>Pause</span>
+						</button>
+					</li>
+				)}
+				<li>
 					<button
 						type="button"
-						class="btn"
-						aria-label="Reprendre"
-						onClick={() => recordSession.resume()}
+						class="btn btn-danger"
+						aria-label="Arrêter"
+						disabled={status === "stopping"}
+						onClick={() => recordSession.stop()}
 					>
-						<Play size={16} aria-hidden="true" />
-						<span>Reprendre</span>
+						<Square size={16} aria-hidden="true" />
+						<span>Arrêter</span>
 					</button>
-				)}
-				{recordSession.status === "recording" && (
-					<button
-						type="button"
-						class="btn"
-						aria-label="Pause"
-						onClick={() => recordSession.pause()}
-					>
-						<Pause size={16} aria-hidden="true" />
-						<span>Pause</span>
-					</button>
-				)}
-				<button
-					type="button"
-					class="btn btn-danger"
-					aria-label="Arrêter"
-					disabled={recordSession.status === "flushing"}
-					onClick={() => recordSession.stop()}
-				>
-					<Square size={16} aria-hidden="true" />
-					<span>Arrêter</span>
-				</button>
+				</li>
 			</menu>
-			{recordSession.error && <p class="error">{recordSession.error}</p>}
+			{error && <p class="error">{error}</p>}
 		</div>
 	);
 }

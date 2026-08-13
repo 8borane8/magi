@@ -24,7 +24,7 @@ export default function LectureResume() {
 
 	return (
 		<article>
-			{pending.value && <p>Chargement…</p>}
+			{pending.value && <p>Chargement...</p>}
 			{error.value && <p class="error">{error.value}</p>}
 			{source.value && <MarkdownContent source={source.value} />}
 		</article>

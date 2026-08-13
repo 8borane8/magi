@@ -1,59 +1,54 @@
-// ! Review this file
-
+import { patchWebmHeaders } from "@/utils/webm-duration.ts";
+import { config } from "@/config.ts";
 import { join } from "@std/path";
 
-import { config } from "@/config.ts";
-
-type OpenSegment = {
+type OpenRecord = {
 	file: Deno.FsFile;
 	idleTimer: ReturnType<typeof setTimeout> | null;
 };
 
-const openSegments = new Map<string, OpenSegment>();
+const openRecords = new Map<string, OpenRecord>();
 
-export function lectureDir(lectureId: string): string {
+function lectureDir(lectureId: string): string {
 	return join(config.lecturesDir, lectureId);
 }
 
-export function segmentPath(lectureId: string, segmentIndex: number): string {
-	return join(lectureDir(lectureId), `part-${String(segmentIndex).padStart(4, "0")}.webm`);
+function recordPath(lectureId: string): string {
+	return join(lectureDir(lectureId), "record.webm");
 }
 
 export async function ensureLectureDir(lectureId: string): Promise<void> {
 	await Deno.mkdir(lectureDir(lectureId), { recursive: true });
 }
 
-/** Tells a full disk from a real failure, so the route can answer 507 instead of 500. */
 export function isOutOfSpace(error: unknown): boolean {
 	const message = error instanceof Error ? error.message : String(error);
 	return /no space left|not enough space|os error 28|os error 112/i.test(message);
 }
 
-async function acquire(lectureId: string, segmentIndex: number): Promise<Deno.FsFile> {
-	const key = `${lectureId}:${segmentIndex}`;
-	const cached = openSegments.get(key);
+async function acquire(lectureId: string): Promise<Deno.FsFile> {
+	const cached = openRecords.get(lectureId);
 
 	if (cached) {
-		scheduleClose(key, cached);
+		scheduleClose(lectureId, cached);
 		return cached.file;
 	}
 
 	await ensureLectureDir(lectureId);
-	const file = await Deno.open(segmentPath(lectureId, segmentIndex), { create: true, append: true });
+	const file = await Deno.open(recordPath(lectureId), { create: true, append: true });
 
-	const entry: OpenSegment = { file, idleTimer: null };
-	openSegments.set(key, entry);
-	scheduleClose(key, entry);
+	const entry: OpenRecord = { file, idleTimer: null };
+	openRecords.set(lectureId, entry);
+	scheduleClose(lectureId, entry);
 
 	return file;
 }
 
-/** Releases the descriptor a client left behind when it disappeared mid recording. */
-function scheduleClose(key: string, entry: OpenSegment): void {
+function scheduleClose(lectureId: string, entry: OpenRecord): void {
 	if (entry.idleTimer !== null) clearTimeout(entry.idleTimer);
 
 	entry.idleTimer = setTimeout(() => {
-		openSegments.delete(key);
+		openRecords.delete(lectureId);
 		try {
 			entry.file.close();
 		} catch {
@@ -61,18 +56,11 @@ function scheduleClose(key: string, entry: OpenSegment): void {
 		}
 	}, config.idleFileTtlMs);
 
-	Deno.unrefTimer(entry.idleTimer as unknown as number);
+	Deno.unrefTimer(entry.idleTimer);
 }
 
-/**
- * Appends a chunk and flushes it to the disk.
- *
- * The flush happens before the caller records the new position in database: if the node dies in
- * between, the file holds more bytes than the database, which recovery repairs by truncating. The
- * opposite order would lose audio without anyone noticing.
- */
-export async function appendChunk(lectureId: string, segmentIndex: number, data: Uint8Array): Promise<void> {
-	const file = await acquire(lectureId, segmentIndex);
+export async function appendChunk(lectureId: string, data: Uint8Array): Promise<void> {
+	const file = await acquire(lectureId);
 
 	let written = 0;
 	while (written < data.length) {
@@ -82,31 +70,26 @@ export async function appendChunk(lectureId: string, segmentIndex: number, data:
 	await file.sync();
 }
 
+export async function finalizeRecord(lectureId: string, durationMs: number): Promise<void> {
+	closeLectureFiles(lectureId);
+
+	const path = recordPath(lectureId);
+	const data = await Deno.readFile(path);
+	if (!patchWebmHeaders(data, durationMs)) return;
+	await Deno.writeFile(path, data);
+}
+
 export function closeLectureFiles(lectureId: string): void {
-	for (const [key, entry] of openSegments) {
-		if (!key.startsWith(`${lectureId}:`)) continue;
+	const entry = openRecords.get(lectureId);
+	if (!entry) return;
 
-		if (entry.idleTimer !== null) clearTimeout(entry.idleTimer);
-		openSegments.delete(key);
-		try {
-			entry.file.close();
-		} catch {
-			// Already closed.
-		}
-	}
-}
-
-export async function segmentSize(lectureId: string, segmentIndex: number): Promise<number | null> {
+	if (entry.idleTimer !== null) clearTimeout(entry.idleTimer);
+	openRecords.delete(lectureId);
 	try {
-		const stat = await Deno.stat(segmentPath(lectureId, segmentIndex));
-		return stat.size;
+		entry.file.close();
 	} catch {
-		return null;
+		// Already closed.
 	}
-}
-
-export async function truncateSegment(lectureId: string, segmentIndex: number, bytes: number): Promise<void> {
-	await Deno.truncate(segmentPath(lectureId, segmentIndex), bytes);
 }
 
 export async function removeLectureDir(lectureId: string): Promise<void> {

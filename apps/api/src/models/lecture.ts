@@ -57,29 +57,21 @@ export class Lecture extends Model<InferAttributes<Lecture>, InferCreationAttrib
 	@Index
 	declare status: CreationOptional<SessionStatus>;
 
-	@Attribute(DataTypes.DATE)
-	declare lastChunkAt: CreationOptional<Date | null>;
-
-	/** Reported by the client on stop: the node cannot decode Opus without ffmpeg. */
-	@Attribute(DataTypes.INTEGER)
-	declare durationSec: number | null;
-
-	@Attribute(DataTypes.INTEGER)
-	declare audioBytes: number | null;
-
-	/** Current encoder take. A new one starts whenever the browser restarts its MediaRecorder. */
 	@Attribute(DataTypes.INTEGER)
 	@Default(0)
 	@NotNull
-	declare segmentIndex: CreationOptional<number>;
+	declare audioMs: CreationOptional<number>;
+
+	@Attribute(DataTypes.INTEGER)
+	@Default(0)
+	@NotNull
+	declare audioBytes: CreationOptional<number>;
 
 	@Attribute(DataTypes.INTEGER)
 	declare lastSeq: number | null;
 
-	@Attribute(DataTypes.INTEGER)
-	@Default(0)
-	@NotNull
-	declare segmentBytes: CreationOptional<number>;
+	@Attribute(DataTypes.DATE)
+	declare lastChunkAt: Date | null;
 
 	declare createdAt: CreationOptional<Date>;
 	declare updatedAt: CreationOptional<Date>;
