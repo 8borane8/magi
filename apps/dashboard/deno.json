@@ -1,0 +1,12 @@
+{
+	"tasks": {
+		"build": "deno run -A --env-file ./src/index.ts",
+		"dev": "deno run -A --watch --env-file ./src/index.ts --dev"
+	},
+
+	"compilerOptions": {
+		"jsxImportSource": "preact",
+		"jsx": "react-jsx",
+		"experimentalDecorators": true
+	}
+}

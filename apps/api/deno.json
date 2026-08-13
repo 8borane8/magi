@@ -1,0 +1,31 @@
+{
+	"name": "@magi/api",
+	"version": "0.1.0",
+	"exports": "./src/mod.ts",
+
+	"tasks": {
+		"build": "deno run -A --env-file ./src/index.ts",
+		"dev": "deno run -A --watch --env-file=.env.example ./src/index.ts"
+	},
+
+	"imports": {
+		"@/": "./src/",
+
+		"@std/fs": "jsr:@std/fs@^1.0.24",
+		"@std/path": "jsr:@std/path@^1.1.6",
+
+		"@sequelize/core": "npm:@sequelize/core@7.0.0-alpha.48",
+		"@sequelize/sqlite3": "npm:@sequelize/sqlite3@7.0.0-alpha.48"
+	},
+
+	"compilerOptions": {
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
+	},
+
+	"lint": {
+		"rules": {
+			"exclude": ["no-slow-types"]
+		}
+	}
+}

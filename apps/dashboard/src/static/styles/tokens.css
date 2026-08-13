@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,500;0,600;1,500&display=swap");
+
+:root,
+[data-theme="light"] {
+	color-scheme: light;
+
+	--color-accent: #3e4a9a;
+	--color-accent-hover: #323e86;
+	--color-accent-soft: color-mix(in srgb, var(--color-accent) 14%, transparent);
+	--color-on-accent: #fbfaf7;
+
+	--color-bg: #f3f1ec;
+	--color-bg-elevated: #fbfaf7;
+	--color-bg-muted: #e8e4db;
+	--color-border: #d4cfc4;
+	--color-border-strong: #b8b1a4;
+
+	--color-text: #1c1a17;
+	--color-text-muted: #5c574e;
+
+	--color-success: #1f7a45;
+	--color-success-soft: #e3f6eb;
+	--color-warning: #9a6700;
+	--color-warning-soft: #fff4d6;
+	--color-danger: #8f2d24;
+	--color-danger-soft: #f8e8e6;
+
+	--shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.06);
+	--shadow-md: 0 6px 16px rgba(28, 26, 23, 0.08);
+	--overlay: rgba(28, 26, 23, 0.35);
+	--swatch-ring: rgba(28, 26, 23, 0.2);
+}
+
+[data-theme="dark"] {
+	color-scheme: dark;
+
+	--color-accent: #7282c9;
+	--color-accent-hover: #8794d4;
+	--color-accent-soft: color-mix(in srgb, var(--color-accent) 18%, transparent);
+	--color-on-accent: #eef0f8;
+
+	--color-bg: #0f1218;
+	--color-bg-elevated: #161a22;
+	--color-bg-muted: #1e2430;
+	--color-border: #2a3140;
+	--color-border-strong: #3a4356;
+
+	--color-text: #e4e7ee;
+	--color-text-muted: #8b93a7;
+
+	--color-success: #52b57a;
+	--color-success-soft: color-mix(in srgb, var(--color-success) 18%, var(--color-bg-elevated));
+	--color-warning: #d4a43a;
+	--color-warning-soft: color-mix(in srgb, var(--color-warning) 16%, var(--color-bg-elevated));
+	--color-danger: #d07068;
+	--color-danger-soft: color-mix(in srgb, var(--color-danger) 16%, var(--color-bg-elevated));
+
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--shadow-md: 0 6px 20px rgba(0, 0, 0, 0.5);
+	--overlay: rgba(8, 10, 14, 0.65);
+	--swatch-ring: rgba(255, 255, 255, 0.12);
+}
+
+:root {
+	--font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+	--font-serif: "IBM Plex Serif", "Georgia", serif;
+
+	--text-sm: 0.8125rem;
+	--text-md: 0.9375rem;
+	--text-lg: 1.125rem;
+	--text-xl: 1.5rem;
+	--text-2xl: 1.875rem;
+
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.5rem;
+	--space-6: 2rem;
+	--space-8: 3rem;
+
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 8px;
+
+	--ease: 120ms ease;
+}
+
+body {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-md);
+	font-weight: 400;
+	line-height: 1.45;
+
+	background: var(--color-bg);
+}
+
+#root,
+#app {
+	width: 100%;
+}
