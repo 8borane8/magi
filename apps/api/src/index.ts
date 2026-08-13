@@ -1,7 +1,6 @@
-import { SessionStatus } from "@magi/shared/types/session";
+import { resumeStaleWatch } from "@/services/recording.ts";
 import { importModels, Sequelize } from "@sequelize/core";
 import { SqliteDialect } from "@sequelize/sqlite3";
-import { Lecture } from "@/models/lecture.ts";
 import { config } from "@/config.ts";
 import { join } from "@std/path";
 
@@ -15,9 +14,7 @@ const sequelize = new Sequelize({
 
 await sequelize.authenticate();
 await sequelize.sync({ alter: true });
-
-// No client owns a recording after a process restart.
-await Lecture.update({ status: SessionStatus.PAUSED }, { where: { status: SessionStatus.RECORDING } });
+await resumeStaleWatch();
 
 import { HttpServer } from "@webtools/expressapi";
 import mainRouter from "@/routes/index.ts";

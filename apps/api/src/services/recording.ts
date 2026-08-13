@@ -27,14 +27,26 @@ export function clearStalePause(lectureId: string): void {
 	staleTimers.delete(lectureId);
 }
 
-export function armStalePause(lectureId: string): void {
+function staleRemainingMs(lecture: Lecture): number {
+	const ref = lecture.lastChunkAt || lecture.createdAt;
+	return config.staleChunkMs - (Date.now() - ref.getTime());
+}
+
+export function armStalePause(lectureId: string, delayMs: number = config.staleChunkMs): void {
 	clearStalePause(lectureId);
 	const timer = setTimeout(() => {
 		staleTimers.delete(lectureId);
 		void pauseIfStale(lectureId).catch((error) => console.error(error));
-	}, config.staleChunkMs);
+	}, delayMs);
 	Deno.unrefTimer(timer);
 	staleTimers.set(lectureId, timer);
+}
+
+export async function resumeStaleWatch(): Promise<void> {
+	const live = await Lecture.findAll({ where: { status: SessionStatus.RECORDING } });
+	for (const lecture of live) {
+		armStalePause(lecture.id, Math.max(0, staleRemainingMs(lecture)));
+	}
 }
 
 function pauseIfStale(lectureId: string): Promise<void> {
@@ -42,8 +54,11 @@ function pauseIfStale(lectureId: string): Promise<void> {
 		const lecture = await Lecture.findByPk(lectureId);
 		if (!lecture || lecture.status !== SessionStatus.RECORDING) return;
 
-		const ref = lecture.lastChunkAt || lecture.createdAt;
-		if (Date.now() - ref.getTime() < config.staleChunkMs) return;
+		const remaining = staleRemainingMs(lecture);
+		if (remaining > 0) {
+			armStalePause(lectureId, remaining);
+			return;
+		}
 
 		storage.closeLectureFiles(lecture.id);
 		lecture.status = SessionStatus.PAUSED;
