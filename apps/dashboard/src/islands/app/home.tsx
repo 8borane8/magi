@@ -48,7 +48,7 @@ function lectureRowInner(lecture: LectureRow) {
 	return (
 		<>
 			<strong>{lectureTitle(lecture)}</strong>
-			<span>
+			<span class="lecture-tags">
 				{tags.map((tag) => (
 					<span class="pill" key={tag.id}>
 						<span class="swatch" style={{ background: tag.color }}></span>
@@ -375,7 +375,7 @@ export default function Home() {
 				<main>
 					{groups.length === 0 && <p>Aucun cours pour ces critères.</p>}
 					{groups.map((group) => (
-						<section key={group.key}>
+						<section class="lecture-group" key={group.key}>
 							<h2>
 								{group.subject
 									? (

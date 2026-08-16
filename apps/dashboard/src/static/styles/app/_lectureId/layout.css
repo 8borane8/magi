@@ -111,13 +111,12 @@
 		overflow: auto;
 	}
 
-	#lecture-meta,
-	#lecture-chat {
+	#lecture > div > #lecture-meta,
+	#lecture > div > #lecture-chat {
 		display: none;
 	}
 
-	#lecture[data-info-open] > div,
-	#lecture[data-chat-open] > div {
+	#lecture[data-info-open] > div {
 		min-height: 0;
 
 		flex: 1 1 auto;
@@ -127,15 +126,11 @@
 
 	#lecture[data-info-open] > div > main,
 	#lecture[data-info-open] > footer,
-	#lecture[data-info-open] #lecture-chat,
-	#lecture[data-chat-open] > div > main,
-	#lecture[data-chat-open] > footer,
-	#lecture[data-chat-open] #lecture-meta {
+	#lecture[data-info-open] #lecture-chat {
 		display: none;
 	}
 
-	#lecture[data-info-open] #lecture-info-toggle,
-	#lecture[data-chat-open] #lecture-chat-toggle {
+	#lecture[data-info-open] #lecture-info-toggle {
 		color: var(--color-on-accent);
 		background: var(--color-accent);
 		border-color: var(--color-accent);

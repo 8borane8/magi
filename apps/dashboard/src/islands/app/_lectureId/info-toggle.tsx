@@ -9,12 +9,8 @@ export default function LectureInfoToggle() {
 		open.value = next;
 		const root = document.getElementById("lecture");
 		if (!root) return;
-		if (next) {
-			root.setAttribute("data-info-open", "true");
-			root.removeAttribute("data-chat-open");
-		} else {
-			root.removeAttribute("data-info-open");
-		}
+		if (next) root.setAttribute("data-info-open", "true");
+		else root.removeAttribute("data-info-open");
 	}
 
 	useEffect(() => {

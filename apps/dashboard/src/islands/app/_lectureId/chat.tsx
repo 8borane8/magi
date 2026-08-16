@@ -157,11 +157,11 @@ export default function LectureChat({
 	}
 
 	return (
-		<aside id="lecture-chat" aria-busy={sending.value || pending.value}>
-			<h2>
+		<aside id="lecture-chat" data-full={fullPage ? "" : undefined} aria-busy={sending.value || pending.value}>
+			<h2 class="chat-head">
 				{fullPage
 					? (
-						<a href={`/l/${lectureId}`}>
+						<a class="chat-back" href={`/l/${lectureId}`}>
 							<ArrowLeft size={16} aria-hidden="true" />
 							<span>Retour</span>
 						</a>
@@ -169,7 +169,7 @@ export default function LectureChat({
 					: (
 						"Prof"
 					)}
-				{fullPage && <span>{title}</span>}
+				{fullPage && <span class="chat-title">{title}</span>}
 				<menu>
 					{!fullPage && (
 						<li>
@@ -207,7 +207,7 @@ export default function LectureChat({
 			)}
 
 			{(count > 0 || sending.value) && (
-				<ol ref={listRef}>
+				<ol class="chat-thread" ref={listRef}>
 					{messages.value.map((message) => (
 						<ChatMessage key={message.id} message={message} srcPrefix={srcPrefix} />
 					))}
@@ -219,7 +219,7 @@ export default function LectureChat({
 				</ol>
 			)}
 
-			<form onSubmit={onSubmit}>
+			<form class="chat-composer" onSubmit={onSubmit}>
 				<textarea
 					name="content"
 					rows={3}
@@ -233,7 +233,7 @@ export default function LectureChat({
 					onKeyDown={onKeyDown}
 				/>
 				{images.value.length > 0 && (
-					<ul>
+					<ul class="chat-drafts">
 						{images.value.map((item, index) => (
 							<li key={item.url}>
 								<img src={item.url} alt={item.file.name} />

@@ -358,7 +358,7 @@
 	color: var(--color-text-muted);
 }
 
-#home > div > main > section {
+.lecture-group {
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
@@ -367,7 +367,7 @@
 	gap: var(--space-2);
 }
 
-#home > div > main > section > h2 {
+.lecture-group > h2 {
 	color: var(--color-text-muted);
 	font-family: var(--font-sans);
 	font-size: var(--text-sm);
@@ -387,11 +387,11 @@
 	border-bottom: 1px solid var(--color-border);
 }
 
-#home > div > main > section > ol > li {
+.lecture-group > ol > li {
 	border-bottom: 1px solid var(--color-border);
 }
 
-#home > div > main > section > ol > li > .lecture-row {
+.lecture-row {
 	width: 100%;
 
 	color: var(--color-text);
@@ -410,25 +410,25 @@
 	padding: var(--space-2) 0;
 }
 
-#home > div > main > section > ol > li > .lecture-row[aria-current="true"] {
+.lecture-row[aria-current="true"] {
 	background: var(--color-accent-soft);
 	border-radius: var(--radius-sm);
 }
 
-#home > div > main > section > ol > li > button.lecture-row {
+button.lecture-row {
 	cursor: pointer;
 }
 
-#home > div > main > section > ol > li > div.lecture-row {
+div.lecture-row {
 	cursor: default;
 }
 
-#home > div > main > section > ol > li > .lecture-row:is(a, button):hover > strong {
+.lecture-row:is(a, button):hover > strong {
 	text-decoration: underline;
 	text-underline-offset: 0.15em;
 }
 
-#home > div > main > section > ol > li > .lecture-row > strong {
+.lecture-row > strong {
 	min-width: 0;
 
 	font-weight: 500;
@@ -439,7 +439,7 @@
 	overflow: hidden;
 }
 
-#home > div > main > section > ol > li > .lecture-row > time {
+.lecture-row > time {
 	width: 4rem;
 
 	color: var(--color-text-muted);
@@ -449,11 +449,11 @@
 	justify-self: center;
 }
 
-#home > div > main > section > ol > li > .lecture-row > .pill[data-status] {
+.lecture-row > .pill[data-status] {
 	justify-self: center;
 }
 
-#home > div > main > section > ol > li > .lecture-row > span:not(.pill) {
+.lecture-tags {
 	display: flex;
 	flex-direction: row;
 	justify-content: flex-end;
@@ -462,7 +462,7 @@
 	gap: var(--space-2);
 }
 
-#home > div > main > section > ol > li > .lecture-row > span:not(.pill) > .pill {
+.lecture-tags > .pill {
 	flex-shrink: 0;
 }
 
@@ -588,11 +588,15 @@
 		padding-bottom: var(--space-3);
 	}
 
-	#home > div > main > section > ol > li > .lecture-row {
+	.lecture-row {
 		grid-template-columns: minmax(0, 1fr) 4rem 6rem;
 	}
 
-	#home > div > main > section > ol > li > .lecture-row > span:not(.pill) {
+	.lecture-tags:empty {
+		display: none;
+	}
+
+	.lecture-tags:not(:empty) {
 		grid-column: 1 / -1;
 
 		justify-content: flex-start;

@@ -1,3 +1,4 @@
+import { MessageCircle } from "lucide-preact";
 import { SessionStatus } from "@magi/shared/types/session";
 import type { Page } from "@webtools/slick-server";
 
@@ -7,7 +8,6 @@ import LectureDelete from "../islands/app/_lectureId/delete.tsx";
 import LectureAudio from "../islands/app/_lectureId/audio.tsx";
 import LectureBack from "../islands/app/_lectureId/back.tsx";
 import LectureInfoToggle from "../islands/app/_lectureId/info-toggle.tsx";
-import LectureChatToggle from "../islands/app/_lectureId/chat-toggle.tsx";
 import LectureChat from "../islands/app/_lectureId/chat.tsx";
 import LectureEdit from "../islands/app/_lectureId/edit.tsx";
 import { createClient } from "../client.ts";
@@ -38,7 +38,14 @@ export default {
 				<nav>
 					<LectureBack />
 					<div class="lecture-nav-actions">
-						<LectureChatToggle />
+						<a
+							id="lecture-chat-toggle"
+							class="btn btn-icon"
+							href={`/l/${lecture.id}/chat`}
+							aria-label="Prof"
+						>
+							<MessageCircle size={16} aria-hidden="true" />
+						</a>
 						<LectureInfoToggle />
 						<LectureEdit
 							data={JSON.stringify({
