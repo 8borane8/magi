@@ -104,32 +104,6 @@ export function ingestChunk(
 	});
 }
 
-type PauseResult =
-	| { kind: "not-found" }
-	| { kind: "finished" }
-	| { kind: "ok"; lecture: Lecture };
-
-export function setPaused(lectureId: string, paused: boolean): Promise<PauseResult> {
-	return withLectureLock(lectureId, async () => {
-		const lecture = await Lecture.findByPk(lectureId);
-		if (!lecture) return { kind: "not-found" };
-		if (lecture.status !== SessionStatus.RECORDING && lecture.status !== SessionStatus.PAUSED) {
-			return { kind: "finished" };
-		}
-
-		if (paused) storage.closeLectureFiles(lectureId);
-
-		await lecture.update({
-			status: paused ? SessionStatus.PAUSED : SessionStatus.RECORDING,
-		});
-
-		if (paused) clearStalePause(lectureId);
-		else armStalePause(lectureId);
-
-		return { kind: "ok", lecture };
-	});
-}
-
 export function uploadState(lecture: Lecture) {
 	return {
 		status: lecture.status,

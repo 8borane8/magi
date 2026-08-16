@@ -11,12 +11,13 @@ import {
 	BelongsTo,
 	BelongsToMany,
 	Default,
-	Index,
+	HasMany,
 	NotNull,
 	PrimaryKey,
 } from "@sequelize/core/decorators-legacy";
 
 import { SessionStatus } from "@magi/shared/types/session";
+import { ChatMessage } from "./chat-message.ts";
 import { LectureTag } from "./lecture-tag.ts";
 import { Subject } from "./subject.ts";
 import { Tag } from "./tag.ts";
@@ -34,27 +35,21 @@ export class Lecture extends Model<InferAttributes<Lecture>, InferCreationAttrib
 	declare notes: string | null;
 
 	@Attribute(DataTypes.UUID)
-	@Index
 	declare subjectId: string | null;
 
-	@BelongsTo(() => Subject, {
-		foreignKey: { name: "subjectId", onDelete: "SET NULL" },
-		inverse: { type: "hasMany", as: "lectures" },
-	})
+	@BelongsTo(() => Subject, "subjectId")
 	declare subject?: NonAttribute<Subject>;
 
 	@BelongsToMany(() => Tag, {
 		through: () => LectureTag,
-		foreignKey: { name: "lectureId", onDelete: "CASCADE" },
-		otherKey: { name: "tagId", onDelete: "CASCADE" },
-		inverse: { as: "lectures" },
+		foreignKey: { name: "lectureId" },
+		otherKey: { name: "tagId" },
 	})
 	declare tags?: NonAttribute<Tag[]>;
 
 	@Attribute(DataTypes.ENUM(...Object.values(SessionStatus)))
 	@Default(SessionStatus.RECORDING)
 	@NotNull
-	@Index
 	declare status: CreationOptional<SessionStatus>;
 
 	@Attribute(DataTypes.INTEGER)
@@ -72,6 +67,9 @@ export class Lecture extends Model<InferAttributes<Lecture>, InferCreationAttrib
 
 	@Attribute(DataTypes.DATE)
 	declare lastChunkAt: Date | null;
+
+	@HasMany(() => ChatMessage, "lectureId")
+	declare chatMessages?: NonAttribute<ChatMessage[]>;
 
 	declare createdAt: CreationOptional<Date>;
 	declare updatedAt: CreationOptional<Date>;

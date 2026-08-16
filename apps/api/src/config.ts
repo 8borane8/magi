@@ -11,4 +11,7 @@ export const config = {
 	maxChunkBytes: 16 * 1024 * 1024,
 	idleFileTtlMs: 2 * 60 * 1000,
 	staleChunkMs: 15_000,
+
+	maxChatImages: 4,
+	maxChatImageBytes: 5 * 1024 * 1024,
 } as const;

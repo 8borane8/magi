@@ -26,7 +26,7 @@
    NUCLEAR RESET
    ========================================================= */
 
-*:where(:not(html, iframe, canvas, img, svg, video, audio):not(svg *, symbol *)) {
+*:where(:not(html, iframe, canvas, img, svg, video, audio, .katex, .katex-display):not(svg *, symbol *, .katex *, .katex-display *)) {
 	all: unset;
 	display: revert;
 }

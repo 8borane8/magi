@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" role="img" aria-labelledby="rc-eq-title">
+	<title id="rc-eq-title">Circuits �quivalents du condensateur � t = 0+ et � t infini</title>
+	<rect width="720" height="240" fill="#f7f4ec" />
+	<rect x="24" y="36" width="328" height="168" rx="8" fill="#fbfaf7" stroke="#d4cfc4" />
+	<rect x="368" y="36" width="328" height="168" rx="8" fill="#fbfaf7" stroke="#d4cfc4" />
+	<g font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" fill="#1c1a17">
+		<text x="44" y="64" font-size="15" font-weight="600">t = 0z � C initialement d�charg�</text>
+		<text x="388" y="64" font-size="15" font-weight="600">t �  � r�gime permanent</text>
+	</g>
+	<g fill="none" stroke="#1c1a17" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M70 168 V118" />
+		<path d="M62 118 H78" />
+		<path d="M66 108 H74" />
+		<path d="M78 114 H150" />
+		<path d="M150 114 l10 -12 10 24 10 -24 10 24 10 -12 H240" />
+		<path d="M240 114 H290" />
+		<path d="M290 114 V168 H70" />
+		<path d="M414 168 V118" />
+		<path d="M406 118 H422" />
+		<path d="M410 108 H418" />
+		<path d="M422 114 H494" />
+		<path d="M494 114 l10 -12 10 24 10 -24 10 24 10 -12 H584" />
+		<path d="M584 114 H620" />
+		<path d="M620 168 H414" />
+	</g>
+	<g fill="none" stroke="#3e4a9a" stroke-width="2.4" stroke-linecap="round">
+		<path d="M290 114 V168" />
+		<path d="M608 102 H632" />
+		<path d="M608 126 H632" />
+	</g>
+	<g font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="14" fill="#5c574e">
+		<text x="44" y="88">C a fil (u_C = 0)</text>
+		<text x="188" y="96" fill="#1c1a17" font-weight="600">R</text>
+		<text x="388" y="88">C a interrupteur ouvert (i = 0)</text>
+		<text x="532" y="96" fill="#1c1a17" font-weight="600">R</text>
+		<text x="44" y="220" fill="#3e4a9a">i(0z) = E/R</text>
+		<text x="388" y="220" fill="#3e4a9a">u_C() = E</text>
+	</g>
+</svg>

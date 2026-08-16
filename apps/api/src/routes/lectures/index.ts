@@ -3,9 +3,13 @@ import { Router, z } from "@webtools/expressapi";
 
 import { SessionStatus } from "@magi/shared/types/session";
 import { LectureTag } from "@/models/lecture-tag.ts";
+import { loadLecture } from "@/middlewares/lecture.ts";
+import * as recording from "@/services/recording.ts";
+import * as storage from "@/services/storage.ts";
 import { Lecture } from "@/models/lecture.ts";
 
 import recordingRouter from "@/routes/lectures/recording.ts";
+import chatRouter from "@/routes/lectures/chat.ts";
 
 const withRelations = [{ association: "subject" }, { association: "tags" }];
 
@@ -78,31 +82,33 @@ export default new Router()
 			}),
 		},
 	)
+	.post("/", async (_req, res) => {
+		const lecture = await Lecture.create();
+
+		await storage.ensureLectureDir(lecture.id);
+		recording.armStalePause(lecture.id);
+
+		return res.json({
+			success: true,
+			data: {
+				lecture: lecture.toJSON(),
+				upload: recording.uploadState(lecture),
+			},
+		});
+	})
+	.use(loadLecture)
 	.get("/:lectureId", async (req, res) => {
-		const lecture = await Lecture.findByPk(req.params.lectureId, { include: withRelations });
-		if (!lecture) {
-			return res.status(404).json({
-				success: false as const,
-				error: "404 Not Found.",
-			});
-		}
+		await req.data.lecture.reload({ include: withRelations });
 
 		return res.json({
 			success: true as const,
-			data: lecture.toJSON(),
+			data: req.data.lecture.toJSON(),
 		});
 	})
 	.patch(
 		"/:lectureId",
 		async (req, res) => {
-			const lecture = await Lecture.findByPk(req.params.lectureId, { include: withRelations });
-			if (!lecture) {
-				return res.status(404).json({
-					success: false,
-					error: "404 Not Found.",
-				});
-			}
-
+			const lecture = req.data.lecture;
 			const { title, notes, subjectId, tagIds } = req.body;
 			await lecture.update({ title, notes, subjectId });
 
@@ -126,4 +132,5 @@ export default new Router()
 			}),
 		},
 	)
+	.use(chatRouter)
 	.use(recordingRouter);

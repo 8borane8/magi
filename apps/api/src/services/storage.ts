@@ -13,6 +13,14 @@ function lectureDir(lectureId: string): string {
 	return join(config.lecturesDir, lectureId);
 }
 
+function chatDir(lectureId: string): string {
+	return join(lectureDir(lectureId), "chat");
+}
+
+export function chatFilePath(lectureId: string, fileName: string): string {
+	return join(chatDir(lectureId), fileName);
+}
+
 function recordPath(lectureId: string): string {
 	return join(lectureDir(lectureId), "record.webm");
 }
@@ -89,6 +97,35 @@ export function closeLectureFiles(lectureId: string): void {
 		entry.file.close();
 	} catch {
 		// Already closed.
+	}
+}
+
+const IMAGE_EXT: Record<string, string> = {
+	"image/jpeg": "jpg",
+	"image/png": "png",
+	"image/webp": "webp",
+	"image/gif": "gif",
+};
+
+export async function saveChatImage(lectureId: string, file: File): Promise<string> {
+	const ext = IMAGE_EXT[file.type];
+	if (!ext) throw new Error("unsupported_image");
+
+	const fileName = `${crypto.randomUUID()}.${ext}`;
+	await Deno.mkdir(chatDir(lectureId), { recursive: true });
+	await Deno.writeFile(chatFilePath(lectureId, fileName), new Uint8Array(await file.arrayBuffer()));
+	return fileName;
+}
+
+export function isSafeChatFileName(fileName: string): boolean {
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif)$/i.test(fileName);
+}
+
+export async function removeChatDir(lectureId: string): Promise<void> {
+	try {
+		await Deno.remove(chatDir(lectureId), { recursive: true });
+	} catch (error) {
+		if (!(error instanceof Deno.errors.NotFound)) throw error;
 	}
 }
 

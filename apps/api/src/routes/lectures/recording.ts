@@ -3,24 +3,28 @@ import { Router, z } from "@webtools/expressapi";
 import { SessionStatus } from "@magi/shared/types/session";
 import * as recording from "@/services/recording.ts";
 import * as storage from "@/services/storage.ts";
-import { Lecture } from "@/models/lecture.ts";
+import type { Lecture } from "@/models/lecture.ts";
 import { config } from "@/config.ts";
 
-export default new Router()
-	.post("/", async (_req, res) => {
-		const lecture = await Lecture.create();
+function isLive(status: SessionStatus): boolean {
+	return [SessionStatus.RECORDING, SessionStatus.PAUSED].includes(status);
+}
 
-		await storage.ensureLectureDir(lecture.id);
-		recording.armStalePause(lecture.id);
+async function setPaused(lecture: Lecture, paused: boolean): Promise<void> {
+	await recording.withLectureLock(lecture.id, async () => {
+		if (!isLive(lecture.status)) return;
+		if (paused) storage.closeLectureFiles(lecture.id);
 
-		return res.json({
-			success: true,
-			data: {
-				lecture: lecture.toJSON(),
-				upload: recording.uploadState(lecture),
-			},
+		await lecture.update({
+			status: paused ? SessionStatus.PAUSED : SessionStatus.RECORDING,
 		});
-	})
+
+		if (paused) recording.clearStalePause(lecture.id);
+		else recording.armStalePause(lecture.id);
+	});
+}
+
+export default new Router<{ lecture: Lecture }>()
 	.post(
 		"/:lectureId/chunks/:seq",
 		async (req, res) => {
@@ -47,7 +51,7 @@ export default new Router()
 
 			try {
 				const result = await recording.ingestChunk(
-					req.params.lectureId,
+					req.data.lecture.id,
 					req.params.seq,
 					new Uint8Array(data),
 				);
@@ -104,91 +108,32 @@ export default new Router()
 		},
 	)
 	.post("/:lectureId/pause", async (req, res) => {
-		const result = await recording.setPaused(req.params.lectureId, true);
-
-		if (result.kind === "not-found") {
-			return res.status(404).json({
-				success: false,
-				error: "404 Not Found.",
-			});
-		}
-		if (result.kind === "finished") {
-			return res.status(409).json({
-				success: false,
-				error: "lecture_finished",
-			});
-		}
-
-		return res.json({
-			success: true,
-			data: recording.uploadState(result.lecture),
-		});
+		await setPaused(req.data.lecture, true);
+		return res.json({ success: true });
 	})
 	.post("/:lectureId/resume", async (req, res) => {
-		const result = await recording.setPaused(req.params.lectureId, false);
-
-		if (result.kind === "not-found") {
-			return res.status(404).json({
-				success: false,
-				error: "404 Not Found.",
-			});
-		}
-		if (result.kind === "finished") {
-			return res.status(409).json({
-				success: false,
-				error: "lecture_finished",
-			});
-		}
-
-		return res.json({
-			success: true,
-			data: recording.uploadState(result.lecture),
-		});
+		await setPaused(req.data.lecture, false);
+		return res.json({ success: true });
 	})
 	.post("/:lectureId/stop", async (req, res) => {
-		const { lectureId } = req.params;
-		const result = await recording.withLectureLock(lectureId, async () => {
-			const lecture = await Lecture.findByPk(lectureId);
-			if (!lecture) return { kind: "not-found" };
-			if (lecture.status !== SessionStatus.RECORDING && lecture.status !== SessionStatus.PAUSED) {
-				return { kind: "ok" };
-			}
+		const lecture = req.data.lecture;
 
-			recording.clearStalePause(lectureId);
-			await storage.finalizeRecord(lectureId, lecture.audioMs);
-			await lecture.update({ status: SessionStatus.PROCESSING });
-
-			return { kind: "ok" };
+		await recording.withLectureLock(lecture.id, async () => {
+			recording.clearStalePause(lecture.id);
+			await storage.finalizeRecord(lecture.id, lecture.audioMs);
+			await lecture.update({ status: SessionStatus.COMPLETED }); // ! PROCESSING
 		});
-
-		if (result.kind === "not-found") {
-			return res.status(404).json({
-				success: false,
-				error: "404 Not Found.",
-			});
-		}
 
 		return res.json({ success: true });
 	})
 	.delete("/:lectureId", async (req, res) => {
-		const { lectureId } = req.params;
-		const result = await recording.withLectureLock(lectureId, async () => {
-			const lecture = await Lecture.findByPk(lectureId);
-			if (!lecture) return { kind: "not-found" };
+		const lecture = req.data.lecture;
 
-			recording.clearStalePause(lectureId);
-			await storage.removeLectureDir(lectureId);
+		await recording.withLectureLock(lecture.id, async () => {
+			recording.clearStalePause(lecture.id);
+			await storage.removeLectureDir(lecture.id);
 			await lecture.destroy();
-
-			return { kind: "ok" };
 		});
-
-		if (result.kind === "not-found") {
-			return res.status(404).json({
-				success: false,
-				error: "404 Not Found.",
-			});
-		}
 
 		return res.json({ success: true });
 	});

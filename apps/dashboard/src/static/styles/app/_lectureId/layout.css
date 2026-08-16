@@ -1,0 +1,153 @@
+#lecture {
+	width: 100%;
+	min-height: 0;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	flex: 1 1 auto;
+
+	overflow: hidden;
+}
+
+#lecture > nav {
+	flex-shrink: 0;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: nowrap;
+	gap: var(--space-3);
+
+	padding: var(--space-3) var(--space-6);
+
+	background: var(--color-bg-elevated);
+	border-bottom: 1px solid var(--color-border);
+}
+
+#lecture > nav > a,
+#lecture > nav > button {
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	font-family: var(--font-sans);
+
+	display: inline-flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: center;
+	flex-wrap: nowrap;
+	gap: var(--space-2);
+
+	padding: 0;
+
+	background: transparent;
+	border: none;
+
+	cursor: pointer;
+	text-decoration: none;
+}
+
+#lecture > nav > a:hover,
+#lecture > nav > button:hover {
+	color: var(--color-text);
+}
+
+#lecture > nav > .lecture-nav-actions {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+	align-items: center;
+	flex-wrap: nowrap;
+	gap: var(--space-2);
+}
+
+#lecture-info-toggle,
+#lecture-chat-toggle {
+	display: none;
+}
+
+#lecture > div {
+	min-height: 0;
+	flex: 1 1 auto;
+
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+}
+
+@media (max-width: 640px) {
+	#lecture-info-toggle,
+	#lecture-chat-toggle {
+		display: inline-flex;
+	}
+
+	#lecture > nav {
+		padding: var(--space-3) var(--space-4);
+	}
+
+	#lecture > nav > button > span,
+	#lecture > nav > .lecture-nav-actions > .btn > span {
+		display: none;
+	}
+
+	#lecture > nav > button,
+	#lecture > nav > .lecture-nav-actions > .btn {
+		width: 2.25rem;
+		min-width: 2.25rem;
+		height: 2.25rem;
+
+		justify-content: center;
+
+		padding: 0;
+	}
+
+	#lecture > div {
+		flex-direction: column;
+
+		overflow: auto;
+	}
+
+	#lecture-meta,
+	#lecture-chat {
+		display: none;
+	}
+
+	#lecture[data-info-open] > div,
+	#lecture[data-chat-open] > div {
+		min-height: 0;
+
+		flex: 1 1 auto;
+
+		overflow: hidden;
+	}
+
+	#lecture[data-info-open] > div > main,
+	#lecture[data-info-open] > footer,
+	#lecture[data-info-open] #lecture-chat,
+	#lecture[data-chat-open] > div > main,
+	#lecture[data-chat-open] > footer,
+	#lecture[data-chat-open] #lecture-meta {
+		display: none;
+	}
+
+	#lecture[data-info-open] #lecture-info-toggle,
+	#lecture[data-chat-open] #lecture-chat-toggle {
+		color: var(--color-on-accent);
+		background: var(--color-accent);
+		border-color: var(--color-accent);
+	}
+
+	#lecture > div > main {
+		min-height: auto;
+
+		flex: none;
+
+		padding: var(--space-4);
+
+		overflow: visible;
+	}
+}

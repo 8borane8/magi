@@ -1,0 +1,700 @@
+@import url("https://esm.sh/katex@0.18.4/dist/katex.min.css");
+
+#lecture > div > main {
+	min-width: 0;
+	min-height: 0;
+	flex: 1 1 auto;
+
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-5);
+
+	padding: var(--space-6);
+
+	overflow: auto;
+}
+
+#lecture > div > main > h1 {
+	font-family: var(--font-serif);
+	font-size: clamp(1.75rem, 3vw, 2.25rem);
+	font-weight: 600;
+	line-height: 1.15;
+}
+
+#lecture > div > main > .lecture-notes {
+	max-width: 40rem;
+	padding: var(--space-4);
+
+	background: var(--color-bg-muted);
+	border-left: 3px solid var(--color-accent);
+	border-radius: var(--radius-sm);
+}
+
+#lecture > div > main > .lecture-notes > p {
+	color: var(--color-text);
+	font-size: var(--text-md);
+	font-weight: 500;
+	line-height: 1.65;
+
+	white-space: pre-wrap;
+}
+
+#lecture > div > main > hr {
+	width: 100%;
+	max-width: 42rem;
+	height: 1px;
+
+	border: none;
+	background: var(--color-border);
+}
+
+#lecture > div > main > article {
+	width: 100%;
+	max-width: 48rem;
+
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-md);
+	font-weight: 400;
+	line-height: 1.7;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: var(--space-4);
+}
+
+.markdown {
+	--fiche-def: var(--color-accent);
+	--fiche-def-bg: var(--color-accent-soft);
+	--fiche-thm: var(--color-theorem);
+	--fiche-thm-bg: var(--color-theorem-soft);
+	--fiche-prop: var(--color-success);
+	--fiche-prop-bg: var(--color-success-soft);
+	--fiche-demo: var(--color-demo);
+	--fiche-demo-bg: var(--color-demo-soft);
+	--fiche-warn: var(--color-warning);
+	--fiche-warn-bg: var(--color-warning-soft);
+	--fiche-danger: var(--color-danger);
+	--fiche-danger-bg: var(--color-danger-soft);
+	--fiche-paper: var(--color-fiche-paper);
+	--fiche-paper-ink: var(--color-fiche-paper-ink);
+	--fiche-paper-line: var(--color-fiche-paper-line);
+
+	width: 100%;
+
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: var(--space-4);
+}
+
+.markdown h2 {
+	color: var(--color-text);
+	font-family: var(--font-serif);
+	font-size: clamp(1.6rem, 2.6vw, 2rem);
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.2;
+
+	display: block;
+}
+
+.markdown h3 {
+	color: var(--color-text);
+	font-family: var(--font-serif);
+	font-size: 1.25rem;
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.3;
+
+	display: block;
+
+	margin: var(--space-5) 0 var(--space-2);
+	padding-bottom: var(--space-2);
+
+	border-bottom: 2px solid var(--color-border-strong);
+}
+
+.markdown h4 {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-md);
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.4;
+
+	display: block;
+
+	margin: var(--space-4) 0 var(--space-2);
+}
+
+.markdown p {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: inherit;
+	font-weight: 400;
+	font-style: normal;
+	line-height: inherit;
+
+	display: block;
+
+	margin: 0;
+}
+
+.markdown strong {
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: 600;
+	font-style: inherit;
+	line-height: inherit;
+
+	display: inline;
+}
+
+.markdown em {
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	font-style: italic;
+	line-height: inherit;
+
+	display: inline;
+}
+
+.markdown ul,
+.markdown ol {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: inherit;
+	font-weight: 400;
+	line-height: 1.65;
+
+	display: block;
+
+	margin: 0;
+	padding-left: 1.4rem;
+}
+
+.markdown ul {
+	list-style-type: disc;
+	list-style-position: outside;
+}
+
+.markdown ol {
+	list-style-type: decimal;
+	list-style-position: outside;
+}
+
+.markdown li {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: inherit;
+	font-weight: 400;
+	line-height: 1.65;
+
+	display: list-item;
+
+	margin: 0 0 var(--space-2);
+	padding: 0;
+}
+
+.markdown li:last-child {
+	margin-bottom: 0;
+}
+
+.markdown li::marker {
+	color: var(--color-text-muted);
+	font-weight: 600;
+}
+
+.markdown code {
+	color: var(--color-text);
+	font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+	font-size: 0.86em;
+	font-weight: 500;
+	font-style: normal;
+	line-height: 1.4;
+
+	display: inline;
+
+	padding: 0.12em 0.4em;
+
+	background: var(--color-bg-muted);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+}
+
+.markdown a {
+	color: var(--color-accent);
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: 600;
+	font-style: inherit;
+	line-height: inherit;
+
+	text-decoration: underline;
+	text-underline-offset: 0.18em;
+
+	display: inline;
+
+	cursor: pointer;
+}
+
+.markdown a:hover {
+	color: var(--color-accent-hover);
+}
+
+.markdown a.fiche-ref {
+	padding: 0.05em 0.28em;
+
+	background: var(--fiche-def-bg);
+	border-radius: var(--radius-sm);
+}
+
+.markdown mark {
+	color: var(--color-text);
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: 600;
+	font-style: inherit;
+	line-height: inherit;
+
+	display: inline;
+
+	padding: 0.08em 0.32em;
+
+	background: var(--fiche-warn-bg);
+	border-radius: var(--radius-sm);
+}
+
+.markdown mark[data-kind="def"] {
+	color: var(--fiche-def);
+	background: var(--fiche-def-bg);
+}
+
+.markdown mark[data-kind="thm"] {
+	color: var(--fiche-thm);
+	background: var(--fiche-thm-bg);
+}
+
+.markdown mark[data-kind="prop"] {
+	color: var(--fiche-prop);
+	background: var(--fiche-prop-bg);
+}
+
+.markdown mark[data-kind="warn"] {
+	color: var(--fiche-danger);
+	background: var(--fiche-danger-bg);
+}
+
+.markdown mark[data-kind="demo"] {
+	color: var(--fiche-demo);
+	background: var(--fiche-demo-bg);
+}
+
+.markdown hr {
+	width: 100%;
+	height: 1px;
+
+	display: block;
+
+	margin: var(--space-2) 0;
+	padding: 0;
+
+	overflow: hidden;
+
+	background: var(--color-border-strong);
+	border: none;
+}
+
+.markdown .katex {
+	color: var(--color-text);
+	font-size: 1.05em;
+}
+
+.markdown .katex-display {
+	color: var(--color-text);
+	font-size: 1.15rem;
+
+	margin: 0;
+	padding: var(--space-4);
+
+	overflow-x: auto;
+
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-sm);
+}
+
+.markdown .katex-display > .katex {
+	color: var(--color-text);
+	font-size: 1em;
+}
+
+.markdown figure {
+	width: 100%;
+
+	color: var(--fiche-paper-ink);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	line-height: 1.5;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: var(--space-2);
+
+	margin: 0;
+	padding: var(--space-3);
+
+	overflow: hidden;
+
+	background: var(--fiche-paper);
+	border: 1px solid var(--fiche-paper-line);
+	border-radius: var(--radius-md);
+}
+
+.markdown figure > img {
+	width: 100%;
+	height: auto;
+
+	display: block;
+
+	background: var(--fiche-paper);
+	border: none;
+	border-radius: var(--radius-sm);
+}
+
+.markdown figure > figcaption {
+	color: var(--fiche-paper-ink);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	font-style: italic;
+	line-height: 1.5;
+
+	display: block;
+
+	margin: 0;
+	padding: var(--space-1) var(--space-1) 0;
+}
+
+.markdown table {
+	width: 100%;
+
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	line-height: 1.5;
+
+	display: table;
+	border-collapse: separate;
+	border-spacing: 0;
+
+	margin: 0;
+
+	overflow: hidden;
+
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+}
+
+.markdown table > thead {
+	display: table-header-group;
+}
+
+.markdown table > tbody {
+	display: table-row-group;
+}
+
+.markdown table tr {
+	display: table-row;
+}
+
+.markdown table th,
+.markdown table td {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	line-height: 1.5;
+
+	text-align: left;
+	vertical-align: top;
+	overflow-wrap: anywhere;
+
+	display: table-cell;
+
+	padding: 0.7rem 0.8rem;
+
+	background: var(--color-bg-elevated);
+	border: none;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.markdown table th {
+	color: var(--color-text-muted);
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+
+	background: var(--color-bg-muted);
+}
+
+.markdown table tr:last-child th,
+.markdown table tr:last-child td {
+	border-bottom: none;
+}
+
+.markdown table td:first-child {
+	color: var(--color-text);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.markdown .fiche-box {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: inherit;
+	font-weight: 400;
+	line-height: 1.65;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: var(--space-3);
+
+	margin: 0;
+	padding: var(--space-4);
+
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+	border-left: 4px solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-sm);
+}
+
+.markdown .fiche-box[data-kind="definition"] {
+	background: var(--fiche-def-bg);
+	border-color: color-mix(in srgb, var(--fiche-def) 35%, var(--color-border));
+	border-left-color: var(--fiche-def);
+}
+
+.markdown .fiche-box[data-kind="theorem"] {
+	background: var(--fiche-thm-bg);
+	border-color: color-mix(in srgb, var(--fiche-thm) 35%, var(--color-border));
+	border-left-color: var(--fiche-thm);
+}
+
+.markdown .fiche-box[data-kind="property"] {
+	background: var(--fiche-prop-bg);
+	border-color: color-mix(in srgb, var(--fiche-prop) 35%, var(--color-border));
+	border-left-color: var(--fiche-prop);
+}
+
+.markdown .fiche-box[data-kind="demo"] {
+	background: var(--fiche-demo-bg);
+	border-color: color-mix(in srgb, var(--fiche-demo) 35%, var(--color-border));
+	border-left-color: var(--fiche-demo);
+}
+
+.markdown .fiche-box[data-kind="warning"] {
+	background: var(--fiche-warn-bg);
+	border-color: color-mix(in srgb, var(--fiche-warn) 40%, var(--color-border));
+	border-left-color: var(--fiche-warn);
+}
+
+.markdown .fiche-box[data-kind="remember"] {
+	background: var(--fiche-def-bg);
+	border-color: color-mix(in srgb, var(--fiche-def) 35%, var(--color-border));
+	border-left-color: var(--fiche-def);
+}
+
+.markdown .fiche-box[data-kind="related"] {
+	background: var(--color-bg-muted);
+	border-color: var(--color-border-strong);
+	border-left-color: var(--color-text-muted);
+}
+
+.markdown .fiche-box[data-kind="meta"] {
+	gap: var(--space-2);
+
+	padding: var(--space-3) var(--space-4);
+
+	background: var(--color-bg-muted);
+	border-color: var(--color-border-strong);
+	border-left-color: var(--color-accent);
+}
+
+.markdown .fiche-box > p:first-child {
+	color: var(--color-text-muted);
+	font-family: var(--font-sans);
+	font-size: 0.7rem;
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.3;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+}
+
+.markdown .fiche-box[data-kind="definition"] > p:first-child,
+.markdown .fiche-box[data-kind="remember"] > p:first-child {
+	color: var(--fiche-def);
+}
+
+.markdown .fiche-box[data-kind="theorem"] > p:first-child {
+	color: var(--fiche-thm);
+}
+
+.markdown .fiche-box[data-kind="property"] > p:first-child {
+	color: var(--fiche-prop);
+}
+
+.markdown .fiche-box[data-kind="demo"] > p:first-child {
+	color: var(--fiche-demo);
+}
+
+.markdown .fiche-box[data-kind="warning"] > p:first-child {
+	color: var(--fiche-warn);
+}
+
+.markdown .fiche-box[data-titled] > p:nth-child(2) {
+	color: var(--color-text);
+	font-family: var(--font-serif);
+	font-size: 1.05rem;
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.3;
+}
+
+.markdown .fiche-box[data-kind="meta"][data-titled] > p:nth-child(2) {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	line-height: 1.45;
+}
+
+.markdown .fiche-box > ul,
+.markdown .fiche-box > ol,
+.markdown .fiche-box > p {
+	margin: 0;
+}
+
+.markdown .fiche-box .katex-display {
+	background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
+}
+
+@media (max-width: 640px) {
+	.markdown table {
+		font-size: 0.75rem;
+	}
+
+	.markdown table td:first-child {
+		white-space: normal;
+	}
+
+	.markdown figure {
+		padding: var(--space-2);
+	}
+}
+
+@media print {
+	@page {
+		margin: 12mm;
+	}
+
+	html,
+	body,
+	#root,
+	#app,
+	#lecture,
+	#lecture > div,
+	#lecture > div > main {
+		width: 100%;
+		height: auto;
+		max-height: none;
+
+		display: block;
+
+		overflow: visible;
+
+		background: #fff;
+	}
+
+	header,
+	#record-bar,
+	#lecture > nav,
+	#lecture > div > aside,
+	#lecture > footer,
+	#lecture > div > main > h1,
+	#lecture > div > main > .lecture-notes,
+	#lecture > div > main > hr {
+		display: none;
+	}
+
+	#lecture > div > main {
+		padding: 0;
+	}
+
+	#lecture > div > main > article,
+	.markdown {
+		--fiche-def: #3e4a9a;
+		--fiche-def-bg: #dfe2f2;
+		--fiche-thm: #6b3d8f;
+		--fiche-thm-bg: #eadcf3;
+		--fiche-prop: #1f7a45;
+		--fiche-prop-bg: #d8f0e2;
+		--fiche-demo: #215f6c;
+		--fiche-demo-bg: #d5eef2;
+		--fiche-warn: #9a6700;
+		--fiche-warn-bg: #f8e7b8;
+		--fiche-danger: #8f2d24;
+		--fiche-danger-bg: #f3d6d2;
+		--color-accent: #3e4a9a;
+		--color-accent-hover: #323e86;
+		--color-text: #1c1a17;
+		--color-text-muted: #5c574e;
+		--color-bg-elevated: #fbfaf7;
+		--color-bg-muted: #e8e4db;
+		--color-border: #d4cfc4;
+		--color-border-strong: #b8b1a4;
+
+		max-width: none;
+
+		color: #1c1a17;
+		background: #fff;
+	}
+
+	.markdown .fiche-box,
+	.markdown figure,
+	.markdown table {
+		break-inside: avoid;
+		box-shadow: none;
+	}
+
+	.markdown a.fiche-ref {
+		text-decoration: none;
+	}
+}

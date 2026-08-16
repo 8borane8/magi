@@ -28,9 +28,8 @@ export class Tag extends Model<InferAttributes<Tag>, InferCreationAttributes<Tag
 
 	@BelongsToMany(() => Lecture, {
 		through: () => LectureTag,
-		foreignKey: { name: "tagId", onDelete: "CASCADE" },
-		otherKey: { name: "lectureId", onDelete: "CASCADE" },
-		inverse: { as: "tags" },
+		foreignKey: { name: "tagId" },
+		otherKey: { name: "lectureId" },
 	})
 	declare lectures?: NonAttribute<Lecture[]>;
 

@@ -48,20 +48,18 @@ function lectureRowInner(lecture: LectureRow) {
 	return (
 		<>
 			<strong>{lectureTitle(lecture)}</strong>
+			<span>
+				{tags.map((tag) => (
+					<span class="pill" key={tag.id}>
+						<span class="swatch" style={{ background: tag.color }}></span>
+						{tag.name}
+					</span>
+				))}
+			</span>
 			<time>{formatDuration(lecture.audioMs)}</time>
 			<span class="pill" data-status={lecture.status}>
 				{STATUS_LABEL[lecture.status as SessionStatus] ?? lecture.status}
 			</span>
-			{tags.length > 0 && (
-				<span>
-					{tags.map((tag) => (
-						<span class="pill" key={tag.id}>
-							<span class="swatch" style={{ background: tag.color }}></span>
-							{tag.name}
-						</span>
-					))}
-				</span>
-			)}
 		</>
 	);
 }

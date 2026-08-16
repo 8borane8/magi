@@ -30,10 +30,7 @@ export class Subject extends Model<InferAttributes<Subject>, InferCreationAttrib
 	@NotNull
 	declare archived: CreationOptional<boolean>;
 
-	@HasMany(() => Lecture, {
-		foreignKey: { name: "subjectId", onDelete: "SET NULL" },
-		inverse: { as: "subject" },
-	})
+	@HasMany(() => Lecture, "subjectId")
 	declare lectures?: NonAttribute<Lecture[]>;
 
 	declare createdAt: CreationOptional<Date>;

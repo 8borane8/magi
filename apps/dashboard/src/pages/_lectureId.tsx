@@ -2,11 +2,13 @@ import { SessionStatus } from "@magi/shared/types/session";
 import type { Page } from "@webtools/slick-server";
 
 import { formatBytes, formatDate, formatDuration, lectureTitle, STATUS_LABEL } from "../utils/lecture-format.ts";
-import LectureResume from "../islands/app/_lectureId/resume.tsx";
+import MarkdownContent from "../components/markdown-content.tsx";
 import LectureDelete from "../islands/app/_lectureId/delete.tsx";
 import LectureAudio from "../islands/app/_lectureId/audio.tsx";
 import LectureBack from "../islands/app/_lectureId/back.tsx";
 import LectureInfoToggle from "../islands/app/_lectureId/info-toggle.tsx";
+import LectureChatToggle from "../islands/app/_lectureId/chat-toggle.tsx";
+import LectureChat from "../islands/app/_lectureId/chat.tsx";
 import LectureEdit from "../islands/app/_lectureId/edit.tsx";
 import { createClient } from "../client.ts";
 
@@ -17,7 +19,12 @@ export default {
 	title: (req) => `${lectureTitle(req.data.lecture)} | Magi`,
 
 	styles: [
-		"/styles/app/lecture.css",
+		"/styles/app/_lectureId/layout.css",
+		"/styles/app/_lectureId/meta.css",
+		"/styles/app/_lectureId/fiche.css",
+		"/styles/app/_lectureId/chat.css",
+		"/styles/app/_lectureId/audio.css",
+		"/styles/app/_lectureId/dialog.css",
 	],
 	scripts: [],
 
@@ -31,6 +38,7 @@ export default {
 				<nav>
 					<LectureBack />
 					<div class="lecture-nav-actions">
+						<LectureChatToggle />
 						<LectureInfoToggle />
 						<LectureEdit
 							data={JSON.stringify({
@@ -104,8 +112,12 @@ export default {
 								<hr />
 							</>
 						)}
-						<LectureResume />
+						<article>
+							<MarkdownContent source={req.data.resume} />
+						</article>
 					</main>
+
+					<LectureChat lectureId={lecture.id} nodeUrl={nodeUrl} />
 				</div>
 
 				<footer>
@@ -134,5 +146,6 @@ export default {
 		req.data.lecture = lectureRes.data;
 		req.data.subjects = subjectsRes.items;
 		req.data.tags = tagsRes.items;
+		req.data.resume = await Deno.readTextFile(`${Deno.cwd()}/src/static/examples/resume.md`);
 	},
 } satisfies Page;

@@ -6,7 +6,7 @@
 
 	--color-accent: #3e4a9a;
 	--color-accent-hover: #323e86;
-	--color-accent-soft: color-mix(in srgb, var(--color-accent) 14%, transparent);
+	--color-accent-soft: color-mix(in srgb, var(--color-accent) 16%, var(--color-bg-elevated));
 	--color-on-accent: #fbfaf7;
 
 	--color-bg: #f3f1ec;
@@ -19,11 +19,18 @@
 	--color-text-muted: #5c574e;
 
 	--color-success: #1f7a45;
-	--color-success-soft: #e3f6eb;
+	--color-success-soft: #d8f0e2;
 	--color-warning: #9a6700;
-	--color-warning-soft: #fff4d6;
+	--color-warning-soft: #f8e7b8;
 	--color-danger: #8f2d24;
-	--color-danger-soft: #f8e8e6;
+	--color-danger-soft: #f3d6d2;
+	--color-theorem: #6b3d8f;
+	--color-theorem-soft: #eadcf3;
+	--color-demo: #215f6c;
+	--color-demo-soft: #d5eef2;
+	--color-fiche-paper: #f4f0e6;
+	--color-fiche-paper-ink: #3f3b34;
+	--color-fiche-paper-line: #c8c2b4;
 
 	--shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.06);
 	--shadow-md: 0 6px 16px rgba(28, 26, 23, 0.08);
@@ -36,7 +43,7 @@
 
 	--color-accent: #7282c9;
 	--color-accent-hover: #8794d4;
-	--color-accent-soft: color-mix(in srgb, var(--color-accent) 18%, transparent);
+	--color-accent-soft: color-mix(in srgb, var(--color-accent) 22%, var(--color-bg-elevated));
 	--color-on-accent: #eef0f8;
 
 	--color-bg: #0f1218;
@@ -49,11 +56,18 @@
 	--color-text-muted: #8b93a7;
 
 	--color-success: #52b57a;
-	--color-success-soft: color-mix(in srgb, var(--color-success) 18%, var(--color-bg-elevated));
-	--color-warning: #d4a43a;
-	--color-warning-soft: color-mix(in srgb, var(--color-warning) 16%, var(--color-bg-elevated));
-	--color-danger: #d07068;
-	--color-danger-soft: color-mix(in srgb, var(--color-danger) 16%, var(--color-bg-elevated));
+	--color-success-soft: color-mix(in srgb, var(--color-success) 22%, var(--color-bg-elevated));
+	--color-warning: #e0b34a;
+	--color-warning-soft: color-mix(in srgb, var(--color-warning) 20%, var(--color-bg-elevated));
+	--color-danger: #e08a82;
+	--color-danger-soft: color-mix(in srgb, var(--color-danger) 20%, var(--color-bg-elevated));
+	--color-theorem: #d2b0f2;
+	--color-theorem-soft: color-mix(in srgb, var(--color-theorem) 22%, var(--color-bg-elevated));
+	--color-demo: #7ec8d4;
+	--color-demo-soft: color-mix(in srgb, var(--color-demo) 20%, var(--color-bg-elevated));
+	--color-fiche-paper: #f4f0e6;
+	--color-fiche-paper-ink: #3f3b34;
+	--color-fiche-paper-line: #c8c2b4;
 
 	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
 	--shadow-md: 0 6px 20px rgba(0, 0, 0, 0.5);

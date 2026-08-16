@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" role="img" aria-labelledby="rc-circuit-title">
+	<title id="rc-circuit-title">Circuit RC s�rie avec g�n�rateur, interrupteur, r�sistance et condensateur</title>
+	<rect width="720" height="280" fill="#f7f4ec" />
+	<g fill="none" stroke="#1c1a17" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M80 200 V92" />
+		<path d="M68 92 H92" />
+		<path d="M74 80 H86" />
+		<path d="M92 86 H210" />
+		<path d="M236 86 H300" />
+		<path d="M300 86 l16 -18 16 36 16 -36 16 36 16 -36 16 18 H420" />
+		<path d="M420 86 H500" />
+		<path d="M500 64 V108" />
+		<path d="M524 64 V108" />
+		<path d="M524 86 H560 V200 H80" />
+		<path d="M210 86 L232 68" />
+		<circle cx="210" cy="86" r="3.2" fill="#1c1a17" stroke="none" />
+		<circle cx="236" cy="86" r="3.2" fill="#1c1a17" stroke="none" />
+	</g>
+	<g fill="#3e4a9a" stroke="#3e4a9a" stroke-width="2">
+		<path d="M512 150 V178" fill="none" />
+		<path d="M512 150 l-5 10 h10 z" stroke="none" />
+		<path d="M160 70 H190" fill="none" />
+		<path d="M190 70 l-10 -5 v10 z" stroke="none" />
+	</g>
+	<g font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" fill="#1c1a17">
+		<text x="48" y="88" font-size="17" font-weight="600">E</text>
+		<text x="218" y="58" font-size="16" font-weight="600">K</text>
+		<text x="348" y="48" font-size="17" font-weight="600">R</text>
+		<text x="548" y="78" font-size="17" font-weight="600">C</text>
+		<text x="168" y="62" font-size="15" font-weight="600" fill="#3e4a9a">i</text>
+		<text x="536" y="172" font-size="15" font-weight="600" fill="#3e4a9a">u_C</text>
+	</g>
+	<g font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" fill="#5c574e" font-size="13">
+		<text x="80" y="248">G�n�rateur id�al, interrupteur K ferm� � t = 0, convention r�cepteur sur C.</text>
+	</g>
+</svg>

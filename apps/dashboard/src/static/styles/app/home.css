@@ -402,7 +402,7 @@
 	text-decoration: none;
 
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 4rem 6rem minmax(0, auto);
+	grid-template-columns: minmax(0, 1fr) minmax(0, auto) 4rem 6rem;
 	align-items: center;
 	column-gap: var(--space-2);
 	row-gap: var(--space-2);
@@ -456,10 +456,14 @@
 #home > div > main > section > ol > li > .lecture-row > span:not(.pill) {
 	display: flex;
 	flex-direction: row;
-	justify-content: flex-start;
+	justify-content: flex-end;
 	align-items: center;
 	flex-wrap: wrap;
 	gap: var(--space-2);
+}
+
+#home > div > main > section > ol > li > .lecture-row > span:not(.pill) > .pill {
+	flex-shrink: 0;
 }
 
 @media (max-width: 640px) {
@@ -590,6 +594,8 @@
 
 	#home > div > main > section > ol > li > .lecture-row > span:not(.pill) {
 		grid-column: 1 / -1;
+
+		justify-content: flex-start;
 	}
 
 	#home > .error {

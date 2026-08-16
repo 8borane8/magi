@@ -1,8 +1,8 @@
-import { Info } from "lucide-preact";
+import { MessageCircle } from "lucide-preact";
 import { useSignal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
 
-export default function LectureInfoToggle() {
+export default function LectureChatToggle() {
 	const open = useSignal(false);
 
 	function syncOpen(next: boolean) {
@@ -10,10 +10,10 @@ export default function LectureInfoToggle() {
 		const root = document.getElementById("lecture");
 		if (!root) return;
 		if (next) {
-			root.setAttribute("data-info-open", "true");
-			root.removeAttribute("data-chat-open");
-		} else {
+			root.setAttribute("data-chat-open", "true");
 			root.removeAttribute("data-info-open");
+		} else {
+			root.removeAttribute("data-chat-open");
 		}
 	}
 
@@ -38,17 +38,17 @@ export default function LectureInfoToggle() {
 	return (
 		<button
 			type="button"
-			id="lecture-info-toggle"
+			id="lecture-chat-toggle"
 			class="btn btn-icon"
-			aria-label="Informations"
+			aria-label="Prof"
 			aria-expanded={open.value}
-			aria-controls="lecture-meta"
+			aria-controls="lecture-chat"
 			onClick={() => {
 				const root = document.getElementById("lecture");
-				syncOpen(!root?.hasAttribute("data-info-open"));
+				syncOpen(!root?.hasAttribute("data-chat-open"));
 			}}
 		>
-			<Info size={16} aria-hidden="true" />
+			<MessageCircle size={16} aria-hidden="true" />
 		</button>
 	);
 }
