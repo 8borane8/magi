@@ -1,6 +1,6 @@
 import type { Page } from "@webtools/slick-server";
 
-import Tags from "../islands/app/tags.tsx";
+import Catalog from "../islands/app/catalog.tsx";
 
 export default {
 	url: "/tags",
@@ -14,7 +14,7 @@ export default {
 	scripts: [],
 
 	head: null,
-	body: <Tags />,
+	body: <Catalog kind="tags" />,
 
 	onpost: null,
 	onrequest: null,

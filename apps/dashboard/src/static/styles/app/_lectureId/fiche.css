@@ -1,56 +1,8 @@
 @import url("https://esm.sh/katex@0.18.4/dist/katex.min.css");
 
-#lecture > div > main {
+#lecture > article {
 	min-width: 0;
 	min-height: 0;
-	flex: 1 1 auto;
-
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-5);
-
-	padding: var(--space-6);
-
-	overflow: auto;
-}
-
-#lecture > div > main > h1 {
-	font-family: var(--font-serif);
-	font-size: clamp(1.75rem, 3vw, 2.25rem);
-	font-weight: 600;
-	line-height: 1.15;
-}
-
-#lecture > div > main > .lecture-notes {
-	max-width: 40rem;
-	padding: var(--space-4);
-
-	background: var(--color-bg-muted);
-	border-left: 3px solid var(--color-accent);
-	border-radius: var(--radius-sm);
-}
-
-#lecture > div > main > .lecture-notes > p {
-	color: var(--color-text);
-	font-size: var(--text-md);
-	font-weight: 500;
-	line-height: 1.65;
-
-	white-space: pre-wrap;
-}
-
-#lecture > div > main > hr {
-	width: 100%;
-	max-width: 42rem;
-	height: 1px;
-
-	border: none;
-	background: var(--color-border);
-}
-
-#lecture > div > main > article {
-	width: 100%;
-	max-width: 48rem;
 
 	color: var(--color-text);
 	font-family: var(--font-sans);
@@ -63,7 +15,47 @@
 	justify-content: flex-start;
 	align-items: stretch;
 	flex-wrap: nowrap;
-	gap: var(--space-4);
+	gap: var(--space-5);
+
+	padding: var(--space-6);
+
+	overflow: auto;
+}
+
+#lecture > article > h1 {
+	font-family: var(--font-serif);
+	font-size: clamp(1.75rem, 3vw, 2.25rem);
+	font-weight: 600;
+	line-height: 1.15;
+}
+
+#lecture > article > .lecture-notes {
+	max-width: 40rem;
+
+	color: var(--color-text);
+	font-size: var(--text-md);
+	font-weight: 500;
+	line-height: 1.65;
+
+	white-space: pre-wrap;
+
+	margin: 0;
+	padding: var(--space-4);
+	padding-bottom: var(--space-5);
+
+	background: var(--color-bg-muted);
+	border-left: 3px solid var(--color-accent);
+	border-bottom: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+}
+
+#lecture > article > p:not(.lecture-notes) {
+	color: var(--color-text-muted);
+}
+
+#lecture > article > .markdown {
+	width: 100%;
+	max-width: 48rem;
 }
 
 .markdown {
@@ -220,6 +212,17 @@
 	font-weight: 600;
 }
 
+.markdown pre {
+	width: 100%;
+
+	display: block;
+
+	margin: 0;
+	padding: var(--space-4);
+
+	overflow-x: auto;
+}
+
 .markdown code {
 	color: var(--color-text);
 	font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
@@ -235,6 +238,245 @@
 	background: var(--color-bg-muted);
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-sm);
+}
+
+.markdown pre > code {
+	color: var(--color-text);
+	font-size: 0.85em;
+	font-weight: 400;
+	line-height: 1.55;
+
+	overflow-wrap: normal;
+	white-space: pre;
+
+	display: block;
+
+	padding: 0;
+
+	background: transparent;
+	border: none;
+	border-radius: 0;
+}
+
+.markdown .code-block {
+	width: 100%;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: 0;
+
+	margin: 0;
+	padding: 0;
+
+	overflow: hidden;
+	background: var(--color-bg-muted);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+}
+
+.markdown .diagram {
+	width: 100%;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: nowrap;
+
+	margin: 0;
+	padding: var(--space-5);
+
+	overflow: visible;
+	background: var(--color-bg-muted);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+}
+
+.markdown .code-block > figcaption {
+	color: var(--color-text-muted);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	font-style: normal;
+	line-height: 1.2;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: nowrap;
+	gap: var(--space-3);
+
+	margin: 0;
+	padding: var(--space-2) var(--space-3);
+
+	background: var(--color-bg-elevated);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.markdown .code-block > figcaption > button {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	line-height: 1.2;
+
+	display: inline-flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: nowrap;
+
+	margin: 0;
+	padding: var(--space-1) var(--space-2);
+
+	background: transparent;
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-sm);
+
+	cursor: pointer;
+}
+
+.markdown .code-block > figcaption > button:hover {
+	color: var(--color-text);
+	background: var(--color-bg-muted);
+}
+
+.markdown .code-block > pre {
+	background: transparent;
+	border: none;
+	border-radius: 0;
+}
+
+.markdown .hljs-comment,
+.markdown .hljs-quote,
+.markdown .hljs-meta,
+.markdown .hljs-doctag {
+	color: var(--color-text-muted);
+}
+
+.markdown .hljs-keyword,
+.markdown .hljs-selector-tag,
+.markdown .hljs-selector-id,
+.markdown .hljs-selector-class {
+	color: var(--color-accent);
+}
+
+.markdown .hljs-string,
+.markdown .hljs-addition {
+	color: var(--color-success);
+}
+
+.markdown .hljs-number,
+.markdown .hljs-literal,
+.markdown .hljs-symbol {
+	color: var(--color-warning);
+}
+
+.markdown .hljs-title,
+.markdown .hljs-section,
+.markdown .hljs-name,
+.markdown .hljs-function,
+.markdown .hljs-class .hljs-title {
+	color: var(--color-theorem);
+}
+
+.markdown .hljs-type,
+.markdown .hljs-built_in,
+.markdown .hljs-attr,
+.markdown .hljs-attribute,
+.markdown .hljs-property,
+.markdown .hljs-variable,
+.markdown .hljs-template-variable,
+.markdown .hljs-params {
+	color: var(--color-demo);
+}
+
+.markdown .hljs-regexp,
+.markdown .hljs-deletion {
+	color: var(--color-danger);
+}
+
+.markdown .hljs-emphasis {
+	font-style: italic;
+}
+
+.markdown .hljs-strong {
+	font-weight: 600;
+}
+
+.markdown .diagram svg {
+	width: auto;
+	max-width: 100%;
+	height: auto;
+
+	display: block;
+}
+
+.markdown .diagram text,
+.markdown .diagram tspan {
+	fill: var(--color-text);
+}
+
+.markdown .diagram .node rect,
+.markdown .diagram .node polygon,
+.markdown .diagram .node circle,
+.markdown .diagram .node ellipse,
+.markdown .diagram .node path,
+.markdown .diagram .actor,
+.markdown .diagram .labelBox,
+.markdown .diagram .note {
+	fill: var(--color-bg-elevated);
+	stroke: var(--color-border-strong);
+}
+
+.markdown .diagram .cluster rect {
+	fill: var(--color-bg);
+	stroke: var(--color-border);
+}
+
+.markdown .diagram .flowchart-link,
+.markdown .diagram .edge-thickness-normal,
+.markdown .diagram .messageLine0,
+.markdown .diagram .messageLine1,
+.markdown .diagram .actor-line,
+.markdown .diagram .loopLine,
+.markdown .diagram line {
+	stroke: var(--color-text-muted);
+}
+
+.markdown .diagram .arrowheadPath,
+.markdown .diagram marker path,
+.markdown .diagram marker polygon {
+	fill: var(--color-text-muted);
+	stroke: var(--color-text-muted);
+}
+
+.markdown .diagram .edgeLabel rect,
+.markdown .diagram .labelBkg {
+	fill: var(--color-bg-elevated);
+}
+
+.markdown .diagram .nodeLabel,
+.markdown .diagram .edgeLabel,
+.markdown .diagram .label,
+.markdown .diagram foreignObject {
+	overflow: visible;
+}
+
+.markdown .diagram .nodeLabel *,
+.markdown .diagram .edgeLabel *,
+.markdown .diagram .label * {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: 0.95rem;
+	font-weight: 500;
+	line-height: 1.35;
+
+	overflow: visible;
 }
 
 .markdown a {
@@ -344,7 +586,7 @@
 	font-size: 1em;
 }
 
-.markdown figure {
+.markdown figure:has(> img) {
 	width: 100%;
 
 	color: var(--fiche-paper-ink);
@@ -370,7 +612,7 @@
 	border-radius: var(--radius-md);
 }
 
-.markdown figure > img {
+.markdown figure:has(> img) > img {
 	width: 100%;
 	height: auto;
 
@@ -381,7 +623,7 @@
 	border-radius: var(--radius-sm);
 }
 
-.markdown figure > figcaption {
+.markdown figure:has(> img) > figcaption {
 	color: var(--fiche-paper-ink);
 	font-family: var(--font-sans);
 	font-size: var(--text-sm);
@@ -606,7 +848,21 @@
 	background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
 }
 
+@media (max-width: 1100px) {
+	#lecture > article {
+		padding: var(--space-5) var(--space-4);
+	}
+}
+
 @media (max-width: 640px) {
+	#lecture > article {
+		padding: var(--space-4);
+	}
+
+	#lecture > article > h1 {
+		font-size: 1.5rem;
+	}
+
 	.markdown table {
 		font-size: 0.75rem;
 	}
@@ -615,8 +871,13 @@
 		white-space: normal;
 	}
 
-	.markdown figure {
+	.markdown figure:has(> img) {
 		padding: var(--space-2);
+	}
+
+	.markdown pre,
+	.markdown .katex-display {
+		font-size: 0.85em;
 	}
 }
 
@@ -630,8 +891,7 @@
 	#root,
 	#app,
 	#lecture,
-	#lecture > div,
-	#lecture > div > main {
+	#lecture > article {
 		width: 100%;
 		height: auto;
 		max-height: none;
@@ -645,20 +905,18 @@
 
 	header,
 	#record-bar,
-	#lecture > nav,
-	#lecture > div > aside,
-	#lecture > footer,
-	#lecture > div > main > h1,
-	#lecture > div > main > .lecture-notes,
-	#lecture > div > main > hr {
+	#lecture > div,
+	#lecture > aside,
+	#lecture > article > h1,
+	#lecture > article > .lecture-notes {
 		display: none;
 	}
 
-	#lecture > div > main {
+	#lecture > article {
 		padding: 0;
 	}
 
-	#lecture > div > main > article,
+	#lecture > article,
 	.markdown {
 		--fiche-def: #3e4a9a;
 		--fiche-def-bg: #dfe2f2;
@@ -689,7 +947,8 @@
 
 	.markdown .fiche-box,
 	.markdown figure,
-	.markdown table {
+	.markdown table,
+	.markdown pre {
 		break-inside: avoid;
 		box-shadow: none;
 	}

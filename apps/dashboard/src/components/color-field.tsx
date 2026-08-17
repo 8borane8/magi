@@ -1,5 +1,5 @@
 export default function ColorField(
-	{ value, onInput }: { value: string; onInput: (value: string) => void },
+	{ value, placeholder, onInput }: { value: string; placeholder?: string; onInput: (value: string) => void },
 ) {
 	return (
 		<label class="field">
@@ -13,6 +13,7 @@ export default function ColorField(
 				<input
 					type="text"
 					value={value}
+					placeholder={placeholder}
 					spellcheck={false}
 					onInput={(event) => onInput((event.target as HTMLInputElement).value)}
 				/>

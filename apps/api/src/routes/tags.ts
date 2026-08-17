@@ -1,4 +1,3 @@
-import { Op } from "@sequelize/core";
 import { Router, z } from "@webtools/expressapi";
 
 import { Tag } from "@/models/tag.ts";
@@ -6,15 +5,19 @@ import { LectureTag } from "@/models/lecture-tag.ts";
 
 export default new Router()
 	.get("/", async (_req, res) => {
-		const tags = await Tag.findAll({ order: [["name", "ASC"]] });
-		const lectureCount = await LectureTag.count({
-			where: { tagId: { [Op.in]: tags.map((tag) => tag.id) } },
-		});
+		const [tags, links] = await Promise.all([
+			Tag.findAll({ order: [["name", "ASC"]] }),
+			LectureTag.findAll({ attributes: ["tagId"] }),
+		]);
+		const counts = new Map<string, number>();
+		for (const link of links) {
+			counts.set(link.tagId, (counts.get(link.tagId) ?? 0) + 1);
+		}
 
 		return res.json({
 			items: tags.map((tag) => ({
 				...tag.toJSON(),
-				lectureCount,
+				lectureCount: counts.get(tag.id) ?? 0,
 			})),
 		});
 	})

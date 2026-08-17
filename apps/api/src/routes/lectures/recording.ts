@@ -5,6 +5,7 @@ import * as recording from "@/services/recording.ts";
 import * as storage from "@/services/storage.ts";
 import type { Lecture } from "@/models/lecture.ts";
 import { config } from "@/config.ts";
+import * as ai from "@/services/ai/index.ts";
 
 function isLive(status: SessionStatus): boolean {
 	return [SessionStatus.RECORDING, SessionStatus.PAUSED].includes(status);
@@ -121,18 +122,20 @@ export default new Router<{ lecture: Lecture }>()
 		await recording.withLectureLock(lecture.id, async () => {
 			recording.clearStalePause(lecture.id);
 			await storage.finalizeRecord(lecture.id, lecture.audioMs);
-			await lecture.update({ status: SessionStatus.COMPLETED }); // ! PROCESSING
+			await lecture.update({ status: SessionStatus.PROCESSING });
 		});
 
-		return res.json({ success: true });
-	})
-	.delete("/:lectureId", async (req, res) => {
-		const lecture = req.data.lecture;
+		queueMicrotask(async () => {
+			try {
+				await ai.transcribe(lecture.id);
+				await ai.classify(lecture.id);
+				await ai.writeFiche(lecture.id);
 
-		await recording.withLectureLock(lecture.id, async () => {
-			recording.clearStalePause(lecture.id);
-			await storage.removeLectureDir(lecture.id);
-			await lecture.destroy();
+				await lecture.update({ status: SessionStatus.COMPLETED });
+			} catch (error) {
+				console.error(error);
+				await lecture.update({ status: SessionStatus.FAILED });
+			}
 		});
 
 		return res.json({ success: true });

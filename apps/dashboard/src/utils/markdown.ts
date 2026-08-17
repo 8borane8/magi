@@ -1,3 +1,4 @@
+import hljs from "highlight.js";
 import katex from "katex";
 import { Marked, type Token, type Tokens } from "marked";
 
@@ -54,6 +55,50 @@ const KATEX = {
 
 function renderTex(tex: string, displayMode: boolean): string {
 	return katex.renderToString(tex.trim(), { ...KATEX, displayMode });
+}
+
+function escapeHtml(value: string): string {
+	return value
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#39;");
+}
+
+function langLabel(lang: string): string {
+	if (!lang) return "Code";
+	const names: Record<string, string> = {
+		cpp: "C++",
+		"c++": "C++",
+		csharp: "C#",
+		cs: "C#",
+		js: "JavaScript",
+		ts: "TypeScript",
+		py: "Python",
+	};
+	return names[lang] ?? lang[0]!.toUpperCase() + lang.slice(1);
+}
+
+function highlightCode(text: string, lang: string | undefined): string {
+	const language = lang?.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+	if (language === "mermaid") {
+		return `<figure class="diagram" data-definition="${escapeHtml(text.trim())}"></figure>\n`;
+	}
+
+	let html = escapeHtml(text);
+	try {
+		if (language && hljs.getLanguage(language)) {
+			html = hljs.highlight(text, { language }).value;
+		}
+	} catch {
+		/* keep escaped */
+	}
+
+	const cls = language ? ` language-${escapeHtml(language)}` : "";
+	return `<figure class="code-block"><figcaption><span>${
+		escapeHtml(langLabel(language))
+	}</span><button type="button" data-copy>Copier</button></figcaption><pre><code class="hljs${cls}">${html}</code></pre></figure>\n`;
 }
 
 function isImageParagraph(token: Token): token is Tokens.Paragraph {
@@ -238,10 +283,13 @@ marked.use({
 			const level = Math.min(depth + 1, 4);
 			return `<h${level}>${this.parser.parseInline(tokens)}</h${level}>\n`;
 		},
+		code({ text, lang }) {
+			return highlightCode(text, lang);
+		},
 		link({ href, title, tokens }) {
 			const inner = this.parser.parseInline(tokens);
 			if (href.startsWith("/l/")) {
-				return `<a href="${href}" class="fiche-ref" title="Cours lié (exemple)">${inner}</a>`;
+				return `<a href="${href}" class="fiche-ref">${inner}</a>`;
 			}
 			const titleAttr = title ? ` title="${title}"` : "";
 			return `<a href="${href}"${titleAttr}>${inner}</a>`;

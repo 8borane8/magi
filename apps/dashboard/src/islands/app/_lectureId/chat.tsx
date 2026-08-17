@@ -38,6 +38,7 @@ export default function LectureChat({
 	const srcPrefix = `${nodeUrl.replace(/\/+$/, "")}/lectures/${lectureId}/chat`;
 	const count = messages.value.length;
 	const canSend = Boolean(draft.value.trim() || images.value.length);
+	const Tag = fullPage ? "section" : "aside";
 
 	useEffect(() => {
 		let cancelled = false;
@@ -157,19 +158,17 @@ export default function LectureChat({
 	}
 
 	return (
-		<aside id="lecture-chat" data-full={fullPage ? "" : undefined} aria-busy={sending.value || pending.value}>
-			<h2 class="chat-head">
+		<Tag id="lecture-chat" data-full={fullPage ? "" : undefined} aria-busy={sending.value || pending.value}>
+			<div>
 				{fullPage
 					? (
-						<a class="chat-back" href={`/l/${lectureId}`}>
+						<a href={`/l/${lectureId}`}>
 							<ArrowLeft size={16} aria-hidden="true" />
 							<span>Retour</span>
 						</a>
 					)
-					: (
-						"Prof"
-					)}
-				{fullPage && <span class="chat-title">{title}</span>}
+					: <p>Prof</p>}
+				{fullPage && <span>{title}</span>}
 				<menu>
 					{!fullPage && (
 						<li>
@@ -197,7 +196,7 @@ export default function LectureChat({
 						</button>
 					</li>
 				</menu>
-			</h2>
+			</div>
 
 			{pending.value && <p>Chargement...</p>}
 			{error.value && <p class="error">{error.value}</p>}
@@ -207,7 +206,7 @@ export default function LectureChat({
 			)}
 
 			{(count > 0 || sending.value) && (
-				<ol class="chat-thread" ref={listRef}>
+				<ol ref={listRef}>
 					{messages.value.map((message) => (
 						<ChatMessage key={message.id} message={message} srcPrefix={srcPrefix} />
 					))}
@@ -219,7 +218,7 @@ export default function LectureChat({
 				</ol>
 			)}
 
-			<form class="chat-composer" onSubmit={onSubmit}>
+			<form onSubmit={onSubmit}>
 				<textarea
 					name="content"
 					rows={3}
@@ -233,7 +232,7 @@ export default function LectureChat({
 					onKeyDown={onKeyDown}
 				/>
 				{images.value.length > 0 && (
-					<ul class="chat-drafts">
+					<ul>
 						{images.value.map((item, index) => (
 							<li key={item.url}>
 								<img src={item.url} alt={item.file.name} />
@@ -300,7 +299,7 @@ export default function LectureChat({
 						<X size={16} />
 					</button>
 				</header>
-				<div class="dialog-body">
+				<div>
 					<p>Effacer tout l'historique de ce cours ? Cette action est irréversible.</p>
 				</div>
 				<footer>
@@ -322,6 +321,6 @@ export default function LectureChat({
 					</button>
 				</footer>
 			</dialog>
-		</aside>
+		</Tag>
 	);
 }

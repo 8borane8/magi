@@ -9,7 +9,7 @@ type OpenRecord = {
 
 const openRecords = new Map<string, OpenRecord>();
 
-function lectureDir(lectureId: string): string {
+export function lectureDir(lectureId: string): string {
 	return join(config.lecturesDir, lectureId);
 }
 
@@ -21,8 +21,16 @@ export function chatFilePath(lectureId: string, fileName: string): string {
 	return join(chatDir(lectureId), fileName);
 }
 
-function recordPath(lectureId: string): string {
+export function recordPath(lectureId: string): string {
 	return join(lectureDir(lectureId), "record.webm");
+}
+
+export function transcriptPath(lectureId: string): string {
+	return join(lectureDir(lectureId), "transcript.txt");
+}
+
+export function resumePath(lectureId: string): string {
+	return join(lectureDir(lectureId), "resume.md");
 }
 
 export async function ensureLectureDir(lectureId: string): Promise<void> {

@@ -13,6 +13,7 @@
 
 		"@std/fs": "jsr:@std/fs@^1.0.24",
 		"@std/path": "jsr:@std/path@^1.1.6",
+		"@std/http": "jsr:@std/http@^1.0.21",
 
 		"@sequelize/core": "npm:@sequelize/core@7.0.0-alpha.48",
 		"@sequelize/sqlite3": "npm:@sequelize/sqlite3@7.0.0-alpha.48"

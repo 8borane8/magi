@@ -31,18 +31,22 @@ export default function LectureAudio({
 			totalSec.value = totalDuration(audio, audioMs);
 		};
 
+		const onPlay = () => {
+			playing.value = true;
+		};
+		const onPause = () => {
+			playing.value = false;
+		};
+		const onEnded = () => {
+			playing.value = false;
+		};
+
 		audio.addEventListener("timeupdate", sync);
 		audio.addEventListener("loadedmetadata", sync);
 		audio.addEventListener("durationchange", sync);
-		audio.addEventListener("play", () => {
-			playing.value = true;
-		});
-		audio.addEventListener("pause", () => {
-			playing.value = false;
-		});
-		audio.addEventListener("ended", () => {
-			playing.value = false;
-		});
+		audio.addEventListener("play", onPlay);
+		audio.addEventListener("pause", onPause);
+		audio.addEventListener("ended", onEnded);
 
 		sync();
 
@@ -50,6 +54,9 @@ export default function LectureAudio({
 			audio.removeEventListener("timeupdate", sync);
 			audio.removeEventListener("loadedmetadata", sync);
 			audio.removeEventListener("durationchange", sync);
+			audio.removeEventListener("play", onPlay);
+			audio.removeEventListener("pause", onPause);
+			audio.removeEventListener("ended", onEnded);
 		};
 	}, [audioMs]);
 
@@ -72,7 +79,7 @@ export default function LectureAudio({
 	const progress = total > 0 ? (current / total) * 100 : 0;
 
 	return (
-		<div class="lecture-audio">
+		<div>
 			<audio ref={audioRef} preload="metadata" src={src} />
 			<button
 				type="button"
@@ -96,7 +103,7 @@ export default function LectureAudio({
 				style={{ "--progress": `${progress}%` }}
 				onInput={seek}
 			/>
-			<time class="lecture-audio-time">
+			<time>
 				{formatDuration(current * 1000)} / {formatDuration(total > 0 ? total * 1000 : null)}
 			</time>
 		</div>

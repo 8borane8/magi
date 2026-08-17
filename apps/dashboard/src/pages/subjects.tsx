@@ -1,6 +1,6 @@
 import type { Page } from "@webtools/slick-server";
 
-import Subjects from "../islands/app/subjects.tsx";
+import Catalog from "../islands/app/catalog.tsx";
 
 export default {
 	url: "/subjects",
@@ -14,7 +14,7 @@ export default {
 	scripts: [],
 
 	head: null,
-	body: <Subjects />,
+	body: <Catalog kind="subjects" />,
 
 	onpost: null,
 	onrequest: null,

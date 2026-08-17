@@ -4,54 +4,29 @@ import { useEffect } from "preact/hooks";
 import { createClient } from "../client.ts";
 import type { CatalogDraft, CatalogRow } from "../components/catalog-page.tsx";
 
-const DEFAULT_DRAFT: CatalogDraft = { id: null, name: "", color: "#3e4a9a", archived: false };
+const DEFAULT_DRAFT: CatalogDraft = { id: null, name: "", color: "#3e4a9a" };
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
-type CatalogKind = "subjects" | "tags";
+export type CatalogKind = "subjects" | "tags";
 
 const CONFIG = {
 	subjects: {
 		loadError: "Impossible de charger les matières.",
-		deleteConfirm: (name: string) => `Supprimer la matière « ${name} » ?`,
-		showArchived: true,
 		load: () => createClient().get("/subjects"),
 		save: (draft: CatalogDraft) =>
 			createClient().put("/subjects", {
-				body: {
-					id: draft.id ?? undefined,
-					name: draft.name.trim(),
-					color: draft.color,
-					archived: draft.archived,
-				},
+				body: { id: draft.id ?? undefined, name: draft.name.trim(), color: draft.color },
 			}),
 		remove: (id: string) => createClient().delete("/subjects/:subjectId", { params: { subjectId: id } }),
-		toDraft: (item: CatalogRow): CatalogDraft => ({
-			id: item.id,
-			name: item.name,
-			color: item.color,
-			archived: Boolean(item.archived),
-		}),
 	},
 	tags: {
 		loadError: "Impossible de charger les étiquettes.",
-		deleteConfirm: (name: string) => `Supprimer l'étiquette « ${name} » ?`,
-		showArchived: false,
 		load: () => createClient().get("/tags"),
 		save: (draft: CatalogDraft) =>
 			createClient().put("/tags", {
-				body: {
-					id: draft.id ?? undefined,
-					name: draft.name.trim(),
-					color: draft.color,
-				},
+				body: { id: draft.id ?? undefined, name: draft.name.trim(), color: draft.color },
 			}),
 		remove: (id: string) => createClient().delete("/tags/:tagId", { params: { tagId: id } }),
-		toDraft: (item: CatalogRow): CatalogDraft => ({
-			id: item.id,
-			name: item.name,
-			color: item.color,
-			archived: false,
-		}),
 	},
 } as const;
 
@@ -59,15 +34,16 @@ export function useCatalog(kind: CatalogKind) {
 	const cfg = CONFIG[kind];
 	const items = useSignal<CatalogRow[]>([]);
 	const draft = useSignal<CatalogDraft>({ ...DEFAULT_DRAFT });
-	const error = useSignal<string | null>(null);
+	const loadError = useSignal<string | null>(null);
+	const formError = useSignal<string | null>(null);
 
 	async function refresh() {
-		error.value = null;
+		loadError.value = null;
 		try {
 			const res = await cfg.load();
 			items.value = res.items;
 		} catch {
-			error.value = cfg.loadError;
+			loadError.value = cfg.loadError;
 		}
 	}
 
@@ -75,46 +51,51 @@ export function useCatalog(kind: CatalogKind) {
 		void refresh();
 	}, []);
 
-	async function onSubmit(event: Event) {
+	async function onSubmit(event: Event): Promise<boolean> {
 		event.preventDefault();
+		formError.value = null;
 		if (!HEX_COLOR.test(draft.value.color)) {
-			error.value = "La couleur doit être un hexadécimal #RRGGBB.";
-			return;
+			formError.value = "La couleur doit être un hexadécimal #RRGGBB.";
+			return false;
 		}
 		try {
 			await cfg.save(draft.value);
 			draft.value = { ...DEFAULT_DRAFT };
 			await refresh();
+			return true;
 		} catch {
-			error.value = "Enregistrement impossible.";
+			formError.value = "Enregistrement impossible.";
+			return false;
 		}
 	}
 
-	async function onDelete(item: CatalogRow) {
-		if (!confirm(cfg.deleteConfirm(item.name))) return;
+	async function onDelete(item: CatalogRow): Promise<boolean> {
+		formError.value = null;
 		try {
 			await cfg.remove(item.id);
 			if (draft.value.id === item.id) draft.value = { ...DEFAULT_DRAFT };
 			await refresh();
+			return true;
 		} catch {
-			error.value = "Suppression impossible.";
+			formError.value = "Suppression impossible.";
+			return false;
 		}
 	}
 
 	return {
 		items,
 		draft,
-		error,
-		showArchived: cfg.showArchived,
+		loadError,
+		formError,
 		onSubmit,
 		onDelete,
 		onReset: () => {
 			draft.value = { ...DEFAULT_DRAFT };
-			error.value = null;
+			formError.value = null;
 		},
 		onEdit: (item: CatalogRow) => {
-			draft.value = cfg.toDraft(item);
-			error.value = null;
+			draft.value = { id: item.id, name: item.name, color: item.color };
+			formError.value = null;
 		},
 		onDraft: (next: CatalogDraft) => {
 			draft.value = next;

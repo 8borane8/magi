@@ -25,11 +25,6 @@ export class Subject extends Model<InferAttributes<Subject>, InferCreationAttrib
 	@NotNull
 	declare color: string;
 
-	@Attribute(DataTypes.BOOLEAN)
-	@Default(false)
-	@NotNull
-	declare archived: CreationOptional<boolean>;
-
 	@HasMany(() => Lecture, "subjectId")
 	declare lectures?: NonAttribute<Lecture[]>;
 

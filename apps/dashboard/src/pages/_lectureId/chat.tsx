@@ -1,9 +1,9 @@
 import { SessionStatus } from "@magi/shared/types/session";
 import type { Page } from "@webtools/slick-server";
 
-import { lectureTitle } from "../utils/lecture-format.ts";
-import LectureChat from "../islands/app/_lectureId/chat.tsx";
-import { createClient } from "../client.ts";
+import { lectureTitle } from "../../utils/lecture-format.ts";
+import LectureChat from "../../islands/app/_lectureId/chat.tsx";
+import { createClient } from "../../client.ts";
 
 export default {
 	url: "/l/:lectureId/chat",
@@ -24,14 +24,12 @@ export default {
 		const nodeUrl = req.cookies.nodeUrl;
 
 		return (
-			<section id="lecture-chat-page">
-				<LectureChat
-					lectureId={lecture.id}
-					nodeUrl={nodeUrl}
-					title={lectureTitle(lecture)}
-					fullPage
-				/>
-			</section>
+			<LectureChat
+				lectureId={lecture.id}
+				nodeUrl={nodeUrl}
+				title={lectureTitle(lecture)}
+				fullPage
+			/>
 		);
 	},
 

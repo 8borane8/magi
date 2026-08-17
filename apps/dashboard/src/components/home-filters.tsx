@@ -70,10 +70,10 @@ export default function HomeFilters({
 				to={draft.value.to}
 				onChange={(from, to) => draft.value = { ...draft.value, from, to }}
 			/>
-			<footer>
+			<div>
 				<button type="button" class="btn" onClick={onReset}>Réinitialiser</button>
 				<button type="button" class="btn btn-primary" onClick={onApply}>Valider</button>
-			</footer>
+			</div>
 		</div>
 	);
 }

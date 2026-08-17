@@ -2,7 +2,9 @@ import { type HttpResponse, Router, z } from "@webtools/expressapi";
 
 import { ChatMessage, ChatRole } from "@/models/chat-message.ts";
 import type { Lecture } from "@/models/lecture.ts";
+import { reply } from "@/services/ai/index.ts";
 import * as storage from "@/services/storage.ts";
+import { sendFile } from "@/utils/files.ts";
 import { config } from "@/config.ts";
 
 const chatImage = z.file()
@@ -14,15 +16,6 @@ function notFound(res: HttpResponse) {
 		success: false as const,
 		error: "404 Not Found.",
 	});
-}
-
-async function reply(hasImages: boolean): Promise<string> {
-	await new Promise((resolve) => setTimeout(resolve, 400));
-	return [
-		hasImages ? "J'ai bien reçu tes images." : "J'ai bien lu ta question.",
-		"Le prof local n'est pas encore branché.",
-		"Quand Ollama le sera, je m'appuierai sur la fiche de ce cours pour te répondre.",
-	].join(" ");
 }
 
 export default new Router<{ lecture: Lecture }>()
@@ -37,16 +30,10 @@ export default new Router<{ lecture: Lecture }>()
 			data: items.map((item) => item.toJSON()),
 		});
 	})
-	.get("/:lectureId/chat/:fileName", async (req, res) => {
+	.get("/:lectureId/chat/:fileName", (req, res) => {
 		const { fileName } = req.params;
 		if (!storage.isSafeChatFileName(fileName)) return notFound(res);
-
-		try {
-			return await res.sendFile(storage.chatFilePath(req.data.lecture.id, fileName));
-		} catch (error) {
-			if (error instanceof Deno.errors.NotFound) return notFound(res);
-			throw error;
-		}
+		return sendFile(req, res, storage.chatFilePath(req.data.lecture.id, fileName));
 	})
 	.post(
 		"/:lectureId/chat",
@@ -67,6 +54,11 @@ export default new Router<{ lecture: Lecture }>()
 				path: await storage.saveChatImage(lecture.id, file),
 			})));
 
+			const previous = await ChatMessage.findAll({
+				where: { lectureId: lecture.id },
+				order: [["createdAt", "ASC"]],
+			});
+
 			const user = await ChatMessage.create({
 				lectureId: lecture.id,
 				role: ChatRole.USER,
@@ -74,10 +66,31 @@ export default new Router<{ lecture: Lecture }>()
 				attachments: attachments.length ? attachments : null,
 			});
 
+			const history = [
+				...previous.map((item) => ({ role: item.role, content: item.content })),
+				{ role: user.role, content: user.content },
+			];
+
+			let answer: string;
+			try {
+				answer = await reply({
+					lecture,
+					history,
+					userText: content,
+					imagePaths: attachments.map((item) => storage.chatFilePath(lecture.id, item.path)),
+				});
+			} catch (error) {
+				console.error(error);
+				return res.status(502).json({
+					success: false as const,
+					error: "ai_unavailable",
+				});
+			}
+
 			const assistant = await ChatMessage.create({
 				lectureId: lecture.id,
 				role: ChatRole.ASSISTANT,
-				content: await reply(attachments.length > 0),
+				content: answer,
 				attachments: null,
 			});
 

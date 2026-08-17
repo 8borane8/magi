@@ -1,4 +1,4 @@
-import { resumeStaleWatch } from "@/services/recording.ts";
+import { failStaleProcessing, resumeStaleWatch } from "@/services/recording.ts";
 import { importModels, Sequelize } from "@sequelize/core";
 import { SqliteDialect } from "@sequelize/sqlite3";
 import { config } from "@/config.ts";
@@ -14,6 +14,8 @@ const sequelize = new Sequelize({
 
 await sequelize.authenticate();
 await sequelize.sync({ alter: true });
+
+await failStaleProcessing();
 await resumeStaleWatch();
 
 import { HttpServer } from "@webtools/expressapi";

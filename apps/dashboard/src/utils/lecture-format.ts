@@ -29,8 +29,3 @@ export function formatBytes(bytes: number | null): string {
 export function lectureTitle(lecture: { title: string | null; createdAt: string | Date }): string {
 	return lecture.title?.trim() || formatDate(lecture.createdAt);
 }
-
-export function lectureIdFromUrl(url: string): string {
-	const path = url.split("?")[0] ?? url;
-	return path.split("/").pop() ?? "";
-}

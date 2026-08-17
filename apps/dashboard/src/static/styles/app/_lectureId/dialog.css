@@ -26,6 +26,7 @@
 	overflow: hidden;
 }
 
+.lecture-edit-dialog > header,
 .lecture-edit-dialog > form > header {
 	display: flex;
 	flex-direction: row;
@@ -41,6 +42,7 @@
 	border-bottom: 1px solid var(--color-border);
 }
 
+.lecture-edit-dialog > header > h2,
 .lecture-edit-dialog > form > header > h2 {
 	font-size: var(--text-lg);
 	font-weight: 600;
@@ -49,7 +51,8 @@
 	margin: 0;
 }
 
-.lecture-edit-dialog > form > .dialog-body {
+.lecture-edit-dialog > div,
+.lecture-edit-dialog > form > div {
 	min-height: 0;
 	flex: 1 1 auto;
 
@@ -63,7 +66,7 @@
 	overscroll-behavior: contain;
 }
 
-.lecture-edit-dialog > form > .dialog-body > fieldset {
+.lecture-edit-dialog > form > div > fieldset {
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);
@@ -74,12 +77,13 @@
 	border: none;
 }
 
-.lecture-edit-dialog > form > .dialog-body > fieldset > span {
+.lecture-edit-dialog > form > div > fieldset > span {
 	color: var(--color-text-muted);
 	font-size: var(--text-sm);
 	font-weight: 500;
 }
 
+.lecture-edit-dialog > footer,
 .lecture-edit-dialog > form > footer {
 	display: flex;
 	flex-direction: row;
@@ -95,57 +99,24 @@
 	border-top: 1px solid var(--color-border);
 }
 
-.lecture-edit-dialog > footer {
-	display: flex;
-	flex-direction: row;
-	justify-content: flex-end;
-	align-items: center;
-	gap: var(--space-2);
-
-	flex-shrink: 0;
-
-	padding: var(--space-4) var(--space-5) var(--space-5);
-
-	background: var(--color-bg-elevated);
-	border-top: 1px solid var(--color-border);
-}
-
-.lecture-edit-dialog > header {
-	display: flex;
-	flex-direction: row;
-	justify-content: space-between;
-	align-items: center;
-	gap: var(--space-3);
-
-	flex-shrink: 0;
-
-	padding: var(--space-4) var(--space-5);
-
-	background: var(--color-bg-elevated);
-	border-bottom: 1px solid var(--color-border);
-}
-
-.lecture-edit-dialog > header > h2 {
-	font-size: var(--text-lg);
-	font-weight: 600;
-	line-height: 1.2;
-
-	margin: 0;
-}
-
-.lecture-edit-dialog > .dialog-body {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-4);
-
-	padding: var(--space-4) var(--space-5);
-
-	overflow: auto;
-	overscroll-behavior: contain;
-}
-
-.lecture-edit-dialog > form > .dialog-body > .field > textarea {
+.lecture-edit-dialog > form > div > .field > textarea {
 	min-height: 6rem;
 	max-height: 12rem;
 	resize: vertical;
+}
+
+@media (max-width: 640px) {
+	.lecture-edit-dialog {
+		width: calc(100vw - 1.5rem);
+		max-height: calc(100dvh - 1.5rem);
+	}
+
+	.lecture-edit-dialog > header,
+	.lecture-edit-dialog > form > header,
+	.lecture-edit-dialog > div,
+	.lecture-edit-dialog > form > div,
+	.lecture-edit-dialog > footer,
+	.lecture-edit-dialog > form > footer {
+		padding-inline: var(--space-4);
+	}
 }

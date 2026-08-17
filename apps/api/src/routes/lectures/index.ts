@@ -10,6 +10,7 @@ import { Lecture } from "@/models/lecture.ts";
 
 import recordingRouter from "@/routes/lectures/recording.ts";
 import chatRouter from "@/routes/lectures/chat.ts";
+import dataRouter from "@/routes/lectures/data.ts";
 
 const withRelations = [{ association: "subject" }, { association: "tags" }];
 
@@ -124,7 +125,6 @@ export default new Router()
 		[],
 		{
 			body: z.object({
-				id: z.string().uuid(),
 				title: z.nullable(z.string().max(300)),
 				notes: z.nullable(z.string()),
 				subjectId: z.nullable(z.string().uuid()),
@@ -132,5 +132,17 @@ export default new Router()
 			}),
 		},
 	)
+	.delete("/:lectureId", async (req, res) => {
+		const lecture = req.data.lecture;
+
+		await recording.withLectureLock(lecture.id, async () => {
+			recording.clearStalePause(lecture.id);
+			await storage.removeLectureDir(lecture.id);
+			await lecture.destroy();
+		});
+
+		return res.json({ success: true });
+	})
+	.use(dataRouter)
 	.use(chatRouter)
 	.use(recordingRouter);

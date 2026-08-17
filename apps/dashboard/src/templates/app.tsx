@@ -45,7 +45,6 @@ export default {
 					<div class="header-tools">
 						<a
 							class="btn btn-icon"
-							id="node-status"
 							href="/set-node"
 							aria-label={`Noeud : ${nodeLabel(req.cookies.nodeUrl)}`}
 							title={nodeLabel(req.cookies.nodeUrl)}

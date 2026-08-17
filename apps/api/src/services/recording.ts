@@ -42,6 +42,10 @@ export function armStalePause(lectureId: string, delayMs: number = config.staleC
 	staleTimers.set(lectureId, timer);
 }
 
+export async function failStaleProcessing(): Promise<void> {
+	await Lecture.update({ status: SessionStatus.FAILED }, { where: { status: SessionStatus.PROCESSING } });
+}
+
 export async function resumeStaleWatch(): Promise<void> {
 	const live = await Lecture.findAll({ where: { status: SessionStatus.RECORDING } });
 	for (const lecture of live) {

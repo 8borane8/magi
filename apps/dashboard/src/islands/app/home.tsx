@@ -64,6 +64,14 @@ function lectureRowInner(lecture: LectureRow) {
 	);
 }
 
+function activeFilterCount(filters: Filters): number {
+	let count = 0;
+	if (filters.tagId) count++;
+	if (filters.status) count++;
+	if (filters.from || filters.to) count++;
+	return count;
+}
+
 function matchesSubjectFilter(lecture: LectureRow, filter: string): boolean {
 	if (filter === "all") return true;
 	if (filter === "none") return !lecture.subjectId;
@@ -176,10 +184,12 @@ export default function Home() {
 
 	useEffect(() => {
 		applyHomeQuery(q, appliedQ, subjectFilter, filters);
+		syncQuery();
 
 		const onNavigate = () => {
 			if (globalThis.location.pathname !== "/") return;
 			applyHomeQuery(q, appliedQ, subjectFilter, filters);
+			syncQuery();
 			void load();
 		};
 
@@ -226,6 +236,7 @@ export default function Home() {
 	const counts = countBySubject(lectures.value);
 	const busy = recordSession.status !== "idle";
 	const locked = recordSession.status === "recording" || recordSession.status === "stopping";
+	const filterCount = activeFilterCount(filters.value);
 
 	function setSubjectFilter(value: string) {
 		subjectFilter.value = value;
@@ -247,6 +258,14 @@ export default function Home() {
 		if (!filtersOpen.value) return;
 		filtersOpen.value = false;
 		filters.value = { ...draftFilters.value };
+		syncQuery();
+		void load();
+	}
+
+	function resetFilters() {
+		draftFilters.value = { ...EMPTY_HOME_FILTERS };
+		filters.value = { ...EMPTY_HOME_FILTERS };
+		filtersOpen.value = false;
 		syncQuery();
 		void load();
 	}
@@ -289,10 +308,9 @@ export default function Home() {
 					void load();
 				}}
 			>
-				<div class="home-toolbar">
+				<div>
 					<button
 						type="button"
-						id="home-subjects-toggle"
 						class="btn btn-icon"
 						aria-label="Matières"
 						aria-expanded={subjectsOpen.value}
@@ -314,12 +332,15 @@ export default function Home() {
 						type="button"
 						class="btn btn-icon"
 						ref={filtersRef}
-						aria-label="Filtres"
+						aria-label={filterCount
+							? `Filtres, ${filterCount} actif${filterCount > 1 ? "s" : ""}`
+							: "Filtres"}
 						aria-expanded={filtersOpen.value}
 						aria-controls="home-filters"
 						onClick={toggleFilters}
 					>
 						<SlidersHorizontal size={16} />
+						{filterCount > 0 && <span>{filterCount}</span>}
 					</button>
 					<button type="submit" class="btn btn-icon" aria-label="Rechercher">
 						<Search size={16} />
@@ -342,7 +363,7 @@ export default function Home() {
 					<HomeFilters
 						tags={tags.value}
 						draft={draftFilters}
-						onReset={() => draftFilters.value = { ...EMPTY_HOME_FILTERS }}
+						onReset={resetFilters}
 						onApply={applyFilters}
 					/>
 				)}
@@ -352,47 +373,44 @@ export default function Home() {
 				<p class="error">{error.value || recordSession.error}</p>
 			)}
 
-			<div>
-				{subjectsOpen.value && (
-					<button
-						type="button"
-						id="home-subjects-backdrop"
-						aria-label="Fermer le menu matières"
-						onClick={() => subjectsOpen.value = false}
-					/>
-				)}
-				<aside id="home-subjects" data-open={subjectsOpen.value ? "true" : undefined}>
-					<HomeSubjectsNav
-						subjects={subjects.value}
-						subjectFilter={subjectFilter.value}
-						lecturesCount={lectures.value.length}
-						noneCount={noneCount}
-						counts={counts}
-						onSelect={setSubjectFilter}
-					/>
-				</aside>
+			{subjectsOpen.value && (
+				<button
+					type="button"
+					aria-label="Fermer le menu matières"
+					onClick={() => subjectsOpen.value = false}
+				/>
+			)}
+			<aside id="home-subjects" data-open={subjectsOpen.value ? "true" : undefined}>
+				<HomeSubjectsNav
+					subjects={subjects.value}
+					subjectFilter={subjectFilter.value}
+					lecturesCount={lectures.value.length}
+					noneCount={noneCount}
+					counts={counts}
+					onSelect={setSubjectFilter}
+				/>
+			</aside>
 
-				<main>
-					{groups.length === 0 && <p>Aucun cours pour ces critères.</p>}
-					{groups.map((group) => (
-						<section class="lecture-group" key={group.key}>
-							<h2>
-								{group.subject
-									? (
-										<>
-											<span class="swatch" style={{ background: group.subject.color }}></span>
-											{group.subject.name}
-										</>
-									)
-									: "Non classé"}
-							</h2>
-							<ol>
-								{group.rows.map((lecture) => <li key={lecture.id}>{renderRow(liveRow(lecture))}</li>)}
-							</ol>
-						</section>
-					))}
-				</main>
-			</div>
+			<article>
+				{groups.length === 0 && <p>Aucun cours pour ces critères.</p>}
+				{groups.map((group) => (
+					<section class="lecture-group" key={group.key}>
+						<h2>
+							{group.subject
+								? (
+									<>
+										<span class="swatch" style={{ background: group.subject.color }}></span>
+										{group.subject.name}
+									</>
+								)
+								: "Non classé"}
+						</h2>
+						<ol>
+							{group.rows.map((lecture) => <li key={lecture.id}>{renderRow(liveRow(lecture))}</li>)}
+						</ol>
+					</section>
+				))}
+			</article>
 		</section>
 	);
 }

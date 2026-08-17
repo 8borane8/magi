@@ -117,7 +117,7 @@ audio enregistré. Page cours pour les sessions terminées (métadonnées, notes
 
 ### Matières et étiquettes (disponible)
 
-CRUD des matières et des étiquettes (nom, couleur, archivage pour les matières). Compteur de cours par matière.
+CRUD des matières et des étiquettes (nom, couleur). Compteur de cours par matière.
 
 ### Transcription automatique (à venir)
 
