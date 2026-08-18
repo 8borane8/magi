@@ -2,15 +2,22 @@
 
 Logiciel auto-hébergé d'enregistrement et d'exploitation de cours magistraux par IA.
 
-On lance un enregistrement au début du cours, on l'arrête à la fin : Magi transcrit, classe le cours dans la bonne matière, propose des étiquettes, rédige une fiche, et permet de poser des questions à un « prof » local.
+On lance un enregistrement au début du cours, on l'arrête à la fin : Magi transcrit, classe le cours dans la bonne
+matière, propose des étiquettes, rédige une fiche, et permet de poser des questions à un « prof » local.
 
-Tout tourne sur **votre** machine. Aucun audio, aucune transcription et aucune donnée personnelle ne quitte votre réseau : ni cloud, ni API tierce, ni abonnement.
+Tout tourne sur **votre** machine. Aucun audio, aucune transcription et aucune donnée personnelle ne quitte votre réseau
+: ni cloud, ni API tierce, ni abonnement.
+
+L'API n'a **pas d'authentification**. Elle est prévue pour un usage local ou LAN de confiance. Ne l'exposez pas sur
+Internet.
 
 ## Pourquoi Magi
 
-Les outils de prise de notes par IA existants sont des SaaS : l'audio de vos cours part sur des serveurs distants, la facture tombe tous les mois, et la donnée ne vous appartient plus.
+Les outils de prise de notes par IA existants sont des SaaS : l'audio de vos cours part sur des serveurs distants, la
+facture tombe tous les mois, et la donnée ne vous appartient plus.
 
-Magi part du principe inverse. Le traitement IA tourne en local sur une machine équipée d'un GPU. Le seul coût est celui de l'électricité, et la bibliothèque de cours reste un dossier de fichiers sur un disque que vous contrôlez.
+Magi part du principe inverse. Le traitement IA tourne en local sur une machine équipée d'un GPU. Le seul coût est celui
+de l'électricité, et la bibliothèque de cours reste un dossier de fichiers sur un disque que vous contrôlez.
 
 ## Fonctionnalités
 
@@ -34,65 +41,72 @@ Pas encore : quiz, diarisation, banque de théorèmes, carte mentale.
 git clone https://github.com/8borane8/magi.git
 cd magi
 cp .env.example .env
-docker compose --profile all up
+docker compose --profile all up --build
 ```
 
-Le premier lancement télécharge l'image PyTorch, WhisperX, Ollama et les modèles (`llama3.2`, `llava`). Comptez plusieurs gigaoctets. Les rebuilds suivants ne rechargent que le code Magi.
+Le premier lancement télécharge l'image PyTorch, WhisperX, Ollama et les modèles (`llama3.2`, `llava`). Comptez
+plusieurs gigaoctets. Après une modification du code, reconstruisez les images (`--build`).
 
-Puis ouvrez [http://localhost:5000](http://localhost:5000), indiquez l'URL du nœud (`http://localhost:5050` en local), et enregistrez un cours.
+Puis ouvrez [http://localhost:5000](http://localhost:5000). Avec le profil `all`, le dashboard est déjà branché sur
+`http://localhost:5050`. Enregistrez un cours.
 
 Sans GPU, WhisperX tourne en CPU (`WHISPERX_DEVICE=cpu`). C'est nettement plus lent.
 
 ### GPU NVIDIA
 
-Docker doit voir la carte. Sous Windows : driver NVIDIA à jour, Docker Desktop en WSL2, et `nvidia-smi` doit marcher **dans WSL**. Ensuite :
+Docker doit voir la carte. Sous Windows : driver NVIDIA à jour, Docker Desktop en WSL2, et `nvidia-smi` doit marcher
+**dans WSL**. Ensuite :
 
 ```bash
 # dans .env : WHISPERX_DEVICE=cuda et WHISPERX_COMPUTE_TYPE=float16
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile all up
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile all up --build
 ```
 
 ## Modes
 
 Ollama et WhisperX sont inclus dans le nœud. On ne les lance jamais à part.
 
-| Commande | Ce qui tourne | set-node |
-| --- | --- | --- |
-| `docker compose --profile all up` | nœud + dashboard | `http://localhost:5050` |
-| `docker compose --profile api up` | nœud seul (API, WhisperX, Ollama) | un dashboard ailleurs s'y connecte |
-| `docker compose --profile dashboard up` | dashboard seul | **obligatoire** : URL du nœud distant |
+| Commande                                | Ce qui tourne                     | Connexion                                                            |
+| --------------------------------------- | --------------------------------- | -------------------------------------------------------------------- |
+| `docker compose --profile all up`       | nœud + dashboard                  | déjà configurée (`http://localhost:5050`)                            |
+| `docker compose --profile api up`       | nœud seul (API, WhisperX, Ollama) | un dashboard ailleurs s'y connecte                                   |
+| `docker compose --profile dashboard up` | dashboard seul                    | `localhost:5050` par défaut, ou `MAGI_NODE_URL` pour un nœud distant |
 
 ## Configuration
 
 Copiez `.env.example` vers `.env` à la racine, puis ajustez au besoin.
 
-| Variable | Défaut | Rôle |
-| --- | --- | --- |
-| `DASHBOARD_PORT` | `5000` | Port du dashboard |
-| `API_PORT` | `5050` | Port du nœud |
-| `OLLAMA_CHAT_MODEL` | `llama3.2` | Classement, fiche, chat texte |
-| `OLLAMA_VISION_MODEL` | `llava` | Chat avec images |
-| `WHISPERX_MODEL` | `large-v2` | Modèle de transcription |
-| `WHISPERX_LANGUAGE` | `fr` | Langue |
-| `WHISPERX_DEVICE` | `cuda` | `cuda` ou `cpu` |
-| `WHISPERX_COMPUTE_TYPE` | `float16` | `float16` (GPU) ou `int8` (CPU) |
+| Variable                | Défaut Docker | Rôle                                        |
+| ----------------------- | ------------- | ------------------------------------------- |
+| `DASHBOARD_PORT`        | `5000`        | Port du dashboard                           |
+| `API_PORT`              | `5050`        | Port du nœud                                |
+| `OLLAMA_CHAT_MODEL`     | `llama3.2`    | Classement, fiche, chat texte               |
+| `OLLAMA_VISION_MODEL`   | `llava`       | Chat avec images                            |
+| `WHISPERX_MODEL`        | `large-v2`    | Modèle de transcription                     |
+| `WHISPERX_LANGUAGE`     | `fr`          | Langue                                      |
+| `WHISPERX_DEVICE`       | `cpu`         | `cpu` par défaut, `cuda` avec l'overlay GPU |
+| `WHISPERX_COMPUTE_TYPE` | `int8`        | `int8` (CPU) ou `float16` (GPU)             |
 
-Les cours, la base SQLite et l'audio sont dans le volume Docker `magi-data`. En développement Deno : `apps/api/data/` (non versionné).
+Les cours, la base SQLite et l'audio sont dans le volume Docker `magi-data`. En développement Deno : `apps/api/data/`
+(non versionné).
 
 ## Architecture
 
-| Rôle | Où | Rôle réel |
-| --- | --- | --- |
-| **Client** (`apps/dashboard`) | Navigateur (laptop, téléphone) | Capture le micro, affiche la bibliothèque |
-| **Nœud** (`apps/api`) | Machine avec GPU | Stocke l'audio et la base, transcrit, lance l'IA |
+| Rôle                          | Où                             | Rôle réel                                        |
+| ----------------------------- | ------------------------------ | ------------------------------------------------ |
+| **Client** (`apps/dashboard`) | Navigateur (laptop, téléphone) | Capture le micro, affiche la bibliothèque        |
+| **Nœud** (`apps/api`)         | Machine avec GPU               | Stocke l'audio et la base, transcrit, lance l'IA |
 
-Le client n'a besoin ni de GPU ni de rester allumé pendant le traitement. Un cours enregistré depuis un téléphone est transcrit par la machine restée à la maison.
+Le client n'a besoin ni de GPU ni de rester allumé pendant le traitement. Un cours enregistré depuis un téléphone est
+transcrit par la machine restée à la maison.
 
-Cycle de vie d'un cours : `recording` → `paused` → `processing` → `completed` ou `failed`. Après l'arrêt : WhisperX, puis classement Ollama, puis fiche.
+Cycle de vie d'un cours : `recording` → `paused` → `processing` → `completed` ou `failed`. Après l'arrêt : WhisperX,
+puis classement Ollama, puis fiche. Un cours en `failed` peut être relancé depuis l'accueil.
 
 ## Développement sans Docker
 
-Prérequis : [Deno](https://deno.com/) 2.x, [WhisperX](https://github.com/m-bain/whisperX) dans le `PATH`, [Ollama](https://ollama.com/) en local avec les modèles `llama3.2` et `llava`.
+Prérequis : [Deno](https://deno.com/) 2.x, [WhisperX](https://github.com/m-bain/whisperX) dans le `PATH`,
+[Ollama](https://ollama.com/) en local avec les modèles `llama3.2` et `llava`.
 
 ```bash
 cd apps/api
@@ -118,13 +132,13 @@ magi/
 └── docker-compose.yml
 ```
 
-| Couche | Technologie |
-| --- | --- |
-| Runtime | Deno (monorepo en workspace) |
-| API | `@webtools/expressapi`, SQLite (Sequelize) |
-| Frontend | Slick + Preact |
-| Transcription | WhisperX |
-| LLM | Ollama |
+| Couche        | Technologie                                |
+| ------------- | ------------------------------------------ |
+| Runtime       | Deno (monorepo en workspace)               |
+| API           | `@webtools/expressapi`, SQLite (Sequelize) |
+| Frontend      | Slick + Preact                             |
+| Transcription | WhisperX                                   |
+| LLM           | Ollama                                     |
 
 ## Contribuer
 
@@ -132,4 +146,4 @@ Le projet est en développement actif. `deno fmt` à la racine avant une PR. L'i
 
 ## Licence
 
-[MIT](LICENCE) Copyright (c) 2026–present, Borane
+[MIT](LICENCE) Copyright (c) 2026-present, Borane

@@ -7,7 +7,7 @@ i=0
 until /bin/ollama list >/dev/null 2>&1; do
 	i=$((i + 1))
 	if [ "$i" -gt 60 ]; then
-		echo "ollama n'a pas demarre" >&2
+		echo "ollama did not start" >&2
 		exit 1
 	fi
 	sleep 1

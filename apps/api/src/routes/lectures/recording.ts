@@ -3,7 +3,7 @@ import { Router, z } from "@webtools/expressapi";
 import { SessionStatus } from "@magi/shared/types/session";
 import * as recording from "@/services/recording.ts";
 import * as storage from "@/services/storage.ts";
-import type { Lecture } from "@/models/lecture.ts";
+import { Lecture } from "@/models/lecture.ts";
 import { config } from "@/config.ts";
 import * as ai from "@/services/ai/index.ts";
 
@@ -11,8 +11,26 @@ function isLive(status: SessionStatus): boolean {
 	return [SessionStatus.RECORDING, SessionStatus.PAUSED].includes(status);
 }
 
-async function setPaused(lecture: Lecture, paused: boolean): Promise<void> {
+async function processLecture(lectureId: string): Promise<void> {
+	const lecture = await Lecture.findByPk(lectureId);
+	if (!lecture) return;
+
+	try {
+		await ai.transcribe(lectureId);
+		await ai.classify(lectureId);
+		await ai.writeFiche(lectureId);
+		await lecture.update({ status: SessionStatus.COMPLETED });
+	} catch (error) {
+		console.error(error);
+		await lecture.update({ status: SessionStatus.FAILED });
+	}
+}
+
+async function setPaused(lecture: Lecture, paused: boolean): Promise<boolean> {
+	let ok = false;
+
 	await recording.withLectureLock(lecture.id, async () => {
+		await lecture.reload();
 		if (!isLive(lecture.status)) return;
 		if (paused) storage.closeLectureFiles(lecture.id);
 
@@ -22,7 +40,10 @@ async function setPaused(lecture: Lecture, paused: boolean): Promise<void> {
 
 		if (paused) recording.clearStalePause(lecture.id);
 		else recording.armStalePause(lecture.id);
+		ok = true;
 	});
+
+	return ok;
 }
 
 export default new Router<{ lecture: Lecture }>()
@@ -59,23 +80,18 @@ export default new Router<{ lecture: Lecture }>()
 
 				switch (result.kind) {
 					case "ok":
-						return res.json({
-							success: true,
-							data: recording.uploadState(result.lecture),
-						});
+						return res.json({ success: true });
 
 					case "duplicate":
 						return res.status(409).json({
 							success: false,
 							error: "sequence_duplicate",
-							data: recording.uploadState(result.lecture),
 						});
 
 					case "gap":
 						return res.status(409).json({
 							success: false,
 							error: "sequence_gap",
-							data: recording.uploadState(result.lecture),
 						});
 
 					case "finished":
@@ -109,34 +125,80 @@ export default new Router<{ lecture: Lecture }>()
 		},
 	)
 	.post("/:lectureId/pause", async (req, res) => {
-		await setPaused(req.data.lecture, true);
+		const ok = await setPaused(req.data.lecture, true);
+		if (!ok) {
+			return res.status(409).json({
+				success: false,
+				error: "lecture_not_live",
+			});
+		}
 		return res.json({ success: true });
 	})
 	.post("/:lectureId/resume", async (req, res) => {
-		await setPaused(req.data.lecture, false);
+		const ok = await setPaused(req.data.lecture, false);
+		if (!ok) {
+			return res.status(409).json({
+				success: false,
+				error: "lecture_not_live",
+			});
+		}
 		return res.json({ success: true });
 	})
 	.post("/:lectureId/stop", async (req, res) => {
 		const lecture = req.data.lecture;
+		let empty = false;
+		let notLive = false;
 
 		await recording.withLectureLock(lecture.id, async () => {
+			await lecture.reload();
+			if (!isLive(lecture.status)) {
+				notLive = true;
+				return;
+			}
+			if (!lecture.audioBytes) {
+				empty = true;
+				return;
+			}
+
 			recording.clearStalePause(lecture.id);
 			await storage.finalizeRecord(lecture.id, lecture.audioMs);
 			await lecture.update({ status: SessionStatus.PROCESSING });
 		});
 
-		queueMicrotask(async () => {
-			try {
-				await ai.transcribe(lecture.id);
-				await ai.classify(lecture.id);
-				await ai.writeFiche(lecture.id);
+		if (notLive) {
+			return res.status(409).json({
+				success: false,
+				error: "lecture_not_live",
+			});
+		}
+		if (empty) {
+			return res.status(400).json({
+				success: false,
+				error: "empty_recording",
+			});
+		}
 
-				await lecture.update({ status: SessionStatus.COMPLETED });
-			} catch (error) {
-				console.error(error);
-				await lecture.update({ status: SessionStatus.FAILED });
-			}
+		queueMicrotask(() => void processLecture(lecture.id));
+		return res.json({ success: true });
+	})
+	.post("/:lectureId/retry", async (req, res) => {
+		const lecture = req.data.lecture;
+		let accepted = false;
+
+		await recording.withLectureLock(lecture.id, async () => {
+			await lecture.reload();
+			if (lecture.status !== SessionStatus.FAILED) return;
+			await lecture.update({ status: SessionStatus.PROCESSING });
+			accepted = true;
 		});
 
+		if (!accepted) {
+			return res.status(409).json({
+				success: false,
+				error: "lecture_not_failed",
+			});
+		}
+
+		queueMicrotask(() => void processLecture(lecture.id));
 		return res.json({ success: true });
 	});

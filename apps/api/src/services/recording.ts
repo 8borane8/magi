@@ -8,7 +8,7 @@ const queues = new Map<string, Promise<unknown>>();
 const staleTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 export function withLectureLock<T>(lectureId: string, task: () => Promise<T>): Promise<T> {
-	const previous = queues.get(lectureId) ?? Promise.resolve();
+	const previous = queues.get(lectureId) || Promise.resolve();
 	const result = previous.then(task, task);
 
 	const tail = result.then(() => {}, () => {});
@@ -71,10 +71,10 @@ function pauseIfStale(lectureId: string): Promise<void> {
 }
 
 type IngestResult =
-	| { kind: "ok"; lecture: Lecture }
-	| { kind: "duplicate"; lecture: Lecture }
-	| { kind: "gap"; lecture: Lecture }
-	| { kind: "finished"; lecture: Lecture }
+	| { kind: "ok" }
+	| { kind: "duplicate" }
+	| { kind: "gap" }
+	| { kind: "finished" }
 	| { kind: "not-found" };
 
 export function ingestChunk(
@@ -86,17 +86,17 @@ export function ingestChunk(
 		const lecture = await Lecture.findByPk(lectureId);
 		if (!lecture) return { kind: "not-found" };
 		if (lecture.status !== SessionStatus.RECORDING && lecture.status !== SessionStatus.PAUSED) {
-			return { kind: "finished", lecture };
+			return { kind: "finished" };
 		}
 		const lastSeq = lecture.lastSeq ?? -1;
-		if (seq <= lastSeq) return { kind: "duplicate", lecture };
-		if (seq > lastSeq + 1) return { kind: "gap", lecture };
+		if (seq <= lastSeq) return { kind: "duplicate" };
+		if (seq > lastSeq + 1) return { kind: "gap" };
 
 		const payload = lecture.audioBytes > 0 ? stripWebmInit(data) : data;
 		await storage.appendChunk(lectureId, payload);
 
 		lecture.lastSeq = seq;
-		lecture.audioMs += scanWebmChunkDurationMs(payload) ?? config.chunkMs;
+		lecture.audioMs += scanWebmChunkDurationMs(payload) || config.chunkMs;
 		lecture.audioBytes += payload.byteLength;
 		lecture.lastChunkAt = new Date();
 
@@ -104,18 +104,6 @@ export function ingestChunk(
 		await lecture.save();
 		if (live) armStalePause(lectureId);
 
-		return { kind: "ok", lecture };
+		return { kind: "ok" };
 	});
-}
-
-export function uploadState(lecture: Lecture) {
-	return {
-		status: lecture.status,
-		finished: lecture.status !== SessionStatus.RECORDING && lecture.status !== SessionStatus.PAUSED,
-		nextSeq: (lecture.lastSeq ?? -1) + 1,
-		audioBytes: lecture.audioBytes,
-		audioMs: lecture.audioMs,
-		maxChunkBytes: config.maxChunkBytes,
-		chunkMs: config.chunkMs,
-	};
 }

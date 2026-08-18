@@ -18,17 +18,21 @@ export default function LectureChat({
 	lectureId,
 	nodeUrl,
 	title,
+	messages: initialMessages,
 	fullPage = false,
 }: {
 	lectureId: string;
 	nodeUrl: string;
 	title?: string;
+	messages?: ChatMessageData[];
 	fullPage?: boolean;
 }) {
-	const messages = useSignal<ChatMessageData[]>([]);
+	const messages = useSignal<ChatMessageData[]>(
+		Array.isArray(initialMessages) ? initialMessages : [],
+	);
 	const draft = useSignal("");
 	const images = useSignal<DraftImage[]>([]);
-	const pending = useSignal(true);
+	const pending = useSignal(!Array.isArray(initialMessages));
 	const sending = useSignal(false);
 	const error = useSignal<string | null>(null);
 	const listRef = useRef<HTMLOListElement>(null);
@@ -42,6 +46,14 @@ export default function LectureChat({
 
 	useEffect(() => {
 		let cancelled = false;
+
+		if (Array.isArray(initialMessages)) {
+			pending.value = false;
+			return () => {
+				cancelled = true;
+				for (const item of images.value) URL.revokeObjectURL(item.url);
+			};
+		}
 
 		void (async () => {
 			try {
@@ -113,10 +125,13 @@ export default function LectureChat({
 			body.append("content", content);
 			for (const item of attached) body.append("images", item.file);
 
-			const response = await fetch(`${nodeUrl}/lectures/${encodeURIComponent(lectureId)}/chat`, {
-				method: "POST",
-				body,
-			});
+			const response = await fetch(
+				`${nodeUrl.replace(/\/+$/, "")}/lectures/${encodeURIComponent(lectureId)}/chat`,
+				{
+					method: "POST",
+					body,
+				},
+			);
 			const result = await response.json() as { success?: boolean; data?: ChatMessageData[] };
 			if (!result.success || !Array.isArray(result.data)) throw new Error("chat_send_failed");
 
@@ -202,7 +217,7 @@ export default function LectureChat({
 			{error.value && <p class="error">{error.value}</p>}
 
 			{!pending.value && count === 0 && !sending.value && (
-				<p>Pose une question sur ce cours. Le prof s'appuiera sur la fiche.</p>
+				<p>Posez une question sur ce cours. Le prof s'appuiera sur la fiche.</p>
 			)}
 
 			{(count > 0 || sending.value) && (

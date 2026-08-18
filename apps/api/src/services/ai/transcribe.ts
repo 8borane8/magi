@@ -46,8 +46,8 @@ export async function transcribe(lectureId: string): Promise<void> {
 	}
 
 	const parsed = JSON.parse(await Deno.readTextFile(join(dir, "record.json"))) as WhisperXResult;
-	const text = (parsed.segments ?? [])
-		.map((segment) => segment.text?.trim() ?? "")
+	const text = (parsed.segments || [])
+		.map((segment) => segment.text?.trim() || "")
 		.filter(Boolean)
 		.join("\n");
 

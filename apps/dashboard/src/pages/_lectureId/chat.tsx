@@ -3,7 +3,7 @@ import type { Page } from "@webtools/slick-server";
 
 import { lectureTitle } from "../../utils/lecture-format.ts";
 import LectureChat from "../../islands/app/_lectureId/chat.tsx";
-import { createClient } from "../../client.ts";
+import { createClient, nodeUrl } from "../../client.ts";
 
 export default {
 	url: "/l/:lectureId/chat",
@@ -21,13 +21,14 @@ export default {
 	head: null,
 	body: (req) => {
 		const lecture = req.data.lecture;
-		const nodeUrl = req.cookies.nodeUrl;
+		const url = nodeUrl(req.cookies.nodeUrl)!;
 
 		return (
 			<LectureChat
 				lectureId={lecture.id}
-				nodeUrl={nodeUrl}
+				nodeUrl={url}
 				title={lectureTitle(lecture)}
+				messages={req.data.chat}
 				fullPage
 			/>
 		);
@@ -36,12 +37,15 @@ export default {
 	onpost: null,
 	onrequest: async (req, res) => {
 		const lectureId = req.params.lectureId!;
-		const lectureRes = await createClient(req.cookies.nodeUrl).get("/lectures/:lectureId", {
-			params: { lectureId },
-		});
+		const client = createClient(req.cookies.nodeUrl);
+		const [lectureRes, chatRes] = await Promise.all([
+			client.get("/lectures/:lectureId", { params: { lectureId } }),
+			client.get("/lectures/:lectureId/chat", { params: { lectureId } }),
+		]);
 
 		if (!lectureRes.success || lectureRes.data.status !== SessionStatus.COMPLETED) return res.redirect("/");
 
 		req.data.lecture = lectureRes.data;
+		req.data.chat = chatRes.success ? chatRes.data : [];
 	},
 } satisfies Page;

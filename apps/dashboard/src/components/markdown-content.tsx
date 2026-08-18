@@ -52,7 +52,7 @@ function adoptTheme(svg: Element): void {
 }
 
 async function copyCode(button: HTMLButtonElement): Promise<void> {
-	const text = button.closest(".code-block")?.querySelector("pre > code")?.textContent ?? "";
+	const text = button.closest(".code-block")?.querySelector("pre > code")?.textContent || "";
 	try {
 		await navigator.clipboard.writeText(text);
 		button.textContent = "Copié";

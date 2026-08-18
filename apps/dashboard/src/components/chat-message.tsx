@@ -19,7 +19,7 @@ export default function ChatMessage({
 	message: ChatMessageData;
 	srcPrefix: string;
 }) {
-	const images = (message.attachments ?? []).filter((item) => item.kind === "image");
+	const images = (message.attachments || []).filter((item) => item.kind === "image");
 
 	return (
 		<li data-role={message.role}>

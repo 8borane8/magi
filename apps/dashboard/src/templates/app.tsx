@@ -4,14 +4,14 @@ import { Server } from "lucide-preact";
 import ThemeInit from "../components/theme-init.tsx";
 import RecordBar from "../islands/app/record-bar.tsx";
 import ThemeToggle from "../islands/theme-toggle.tsx";
-import { createClient } from "../client.ts";
+import { nodeUrl } from "../client.ts";
 
-function nodeLabel(nodeUrl: string | undefined): string {
-	if (!nodeUrl) return "Noeud";
+function nodeLabel(url: string | undefined): string {
+	if (!url) return "Noeud";
 	try {
-		return new URL(nodeUrl).host;
+		return new URL(url).host;
 	} catch {
-		return nodeUrl;
+		return url;
 	}
 }
 
@@ -30,10 +30,12 @@ export default {
 	head: <ThemeInit />,
 	body: (req) => {
 		const path = req.url;
+		const url = nodeUrl(req.cookies.nodeUrl);
+		const host = nodeLabel(url);
 
 		return (
 			<>
-				<header>
+				<header data-node-url={url || ""}>
 					<a class="brand" href="/">
 						<img src="/favicon.ico" alt="Magi" width="28" height="28" />
 					</a>
@@ -43,14 +45,16 @@ export default {
 						<a href="/tags" aria-current={path === "/tags" ? "page" : undefined}>Étiquettes</a>
 					</nav>
 					<div class="header-tools">
-						<a
-							class="btn btn-icon"
-							href="/set-node"
-							aria-label={`Noeud : ${nodeLabel(req.cookies.nodeUrl)}`}
-							title={nodeLabel(req.cookies.nodeUrl)}
-						>
-							<Server size={16} aria-hidden="true" />
-						</a>
+						{!Deno.env.get("MAGI_NODE_URL") && (
+							<a
+								class="btn btn-icon"
+								href="/set-node"
+								aria-label={`Noeud : ${host}`}
+								title={host}
+							>
+								<Server size={16} aria-hidden="true" />
+							</a>
+						)}
 						<ThemeToggle />
 					</div>
 				</header>
@@ -60,10 +64,7 @@ export default {
 		);
 	},
 
-	onrequest: async (req, res) => {
-		if (!req.cookies.nodeUrl) return res.redirect("/set-node");
-
-		const result = await createClient(req.cookies.nodeUrl).get("/health");
-		if (!result.success) return res.redirect("/set-node");
+	onrequest: (req, res) => {
+		if (!nodeUrl(req.cookies.nodeUrl)) return res.redirect("/set-node");
 	},
 } satisfies Template;

@@ -1,7 +1,5 @@
-import { Cookies } from "@webtools/slick-client";
-
 import { SessionStatus } from "@magi/shared/types/session";
-import { createClient } from "../client.ts";
+import { createClient, nodeUrl } from "../client.ts";
 
 type Status = "idle" | "recording" | "paused" | "stopping";
 type ServerAction = "pause" | "resume" | "stop";
@@ -28,8 +26,8 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 /**
- * Mic first, node second. Chunks every 5s on an ordered in-memory queue.
- * Reload drops the queue; `attach()` takes back a lecture left paused on the node.
+ * Microphone first, then the node. Chunks every 5s, queued in memory.
+ * Reloading drops the queue; `attach()` resumes a lecture left paused on the node.
  */
 class RecordSession {
 	status: Status = "idle";
@@ -67,8 +65,8 @@ class RecordSession {
 			const response = await createClient().post("/lectures");
 			if (!response.success) throw new Error("Impossible de créer le cours.");
 
-			this.lectureId = response.data.lecture.id;
-			this.nextSeq = response.data.upload.nextSeq ?? 0;
+			this.lectureId = response.data.id;
+			this.nextSeq = 0;
 			this.startCapture();
 			this.emit();
 		} catch (error) {
@@ -102,7 +100,7 @@ class RecordSession {
 
 			this.lectureId = lectureId;
 			this.nextSeq = (response.data.lastSeq ?? -1) + 1;
-			this.pausedElapsedMs = response.data.audioMs ?? 0;
+			this.pausedElapsedMs = response.data.audioMs || 0;
 			this.elapsedSec = Math.floor(this.pausedElapsedMs / 1_000);
 			this.status = "paused";
 			this.emit();
@@ -235,7 +233,7 @@ class RecordSession {
 	}
 
 	private releaseStream(): void {
-		for (const track of this.stream?.getTracks() ?? []) track.stop();
+		for (const track of this.stream?.getTracks() || []) track.stop();
 		this.stream = null;
 		this.recorder = null;
 	}
@@ -285,10 +283,10 @@ class RecordSession {
 	}
 
 	private async sendChunk(chunk: { seq: number; blob: Blob }): Promise<SendResult> {
-		const nodeUrl = Cookies.get("nodeUrl");
-		if (!nodeUrl || !this.lectureId) return { kind: "retry" };
+		const base = nodeUrl();
+		if (!base || !this.lectureId) return { kind: "retry" };
 
-		const url = `${nodeUrl.replace(/\/+$/, "")}/lectures/${encodeURIComponent(this.lectureId)}/chunks/${chunk.seq}`;
+		const url = `${base}/lectures/${encodeURIComponent(this.lectureId)}/chunks/${chunk.seq}`;
 
 		let response: Response;
 		try {
@@ -412,7 +410,7 @@ class RecordSession {
 	}
 }
 
-// Slick bundles each island apart, so a module singleton would not be shared.
+// Slick bundles each island separately, so a module singleton would not be shared.
 const SESSION_KEY = Symbol.for("magi.record-session");
 const globalScope = globalThis as unknown as Record<symbol, RecordSession | undefined>;
 

@@ -89,9 +89,9 @@ function commitRange(
 export default function DateRangePicker(
 	{ from, to, onChange }: { from: string; to: string; onChange: (from: string, to: string) => void },
 ) {
-	const cursor = useSignal(parseIso(from) ?? new Date());
+	const cursor = useSignal(parseIso(from) || new Date());
 	const anchor = useSignal<Date | null>(parseIso(from));
-	const hover = useSignal<Date | null>(parseIso(to) ?? parseIso(from));
+	const hover = useSignal<Date | null>(parseIso(to) || parseIso(from));
 	const selecting = useSignal(false);
 
 	useEffect(() => {
@@ -170,7 +170,7 @@ export default function DateRangePicker(
 
 		onChange(nextFrom, nextTo);
 		anchor.value = start;
-		hover.value = end ?? start;
+		hover.value = end || start;
 		if (start) cursor.value = new Date(start.getFullYear(), start.getMonth(), 1);
 		else if (end) cursor.value = new Date(end.getFullYear(), end.getMonth(), 1);
 	}

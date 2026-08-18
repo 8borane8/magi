@@ -1,12 +1,11 @@
 import { SessionStatus } from "@magi/shared/types/session";
 import type { Page } from "@webtools/slick-server";
 
-import { formatBytes, formatDate, formatDuration, lectureTitle, STATUS_LABEL } from "../../utils/lecture-format.ts";
+import { lectureTitle } from "../../utils/lecture-format.ts";
 import LectureAudio from "../../islands/app/_lectureId/audio.tsx";
 import LectureChat from "../../islands/app/_lectureId/chat.tsx";
-import LectureNav from "../../islands/app/_lectureId/nav-actions.tsx";
-import LectureResume from "../../islands/app/_lectureId/resume.tsx";
-import { createClient } from "../../client.ts";
+import LectureHeader from "../../islands/app/_lectureId/lecture-header.tsx";
+import { createClient, nodeUrl } from "../../client.ts";
 
 export default {
 	url: "/l/:lectureId",
@@ -27,79 +26,32 @@ export default {
 	head: null,
 	body: (req) => {
 		const lecture = req.data.lecture;
-		const nodeUrl = req.cookies.nodeUrl;
+		const url = nodeUrl(req.cookies.nodeUrl)!;
 
 		return (
 			<section id="lecture">
-				<LectureNav
+				<LectureHeader
 					lectureId={lecture.id}
-					title={lecture.title ?? ""}
-					createdAt={lecture.createdAt}
-					notes={lecture.notes ?? ""}
-					subjectId={lecture.subjectId ?? ""}
-					tagIds={JSON.stringify((lecture.tags ?? []).map((tag: { id: string }) => tag.id))}
+					title={lecture.title || ""}
+					createdAt={String(lecture.createdAt)}
+					notes={lecture.notes || ""}
+					status={lecture.status}
+					audioMs={lecture.audioMs}
+					audioBytes={lecture.audioBytes}
+					subject={lecture.subject || null}
+					tags={lecture.tags || []}
+					resume={req.data.resume}
+					resumeFailed={req.data.resumeFailed}
 				/>
 
-				<aside id="lecture-meta">
-					<dl>
-						<div>
-							<dt>Statut</dt>
-							<dd>
-								<span class="pill" data-status={lecture.status}>
-									{STATUS_LABEL[lecture.status as SessionStatus] ?? lecture.status}
-								</span>
-							</dd>
-						</div>
-						<div>
-							<dt>Date</dt>
-							<dd>{formatDate(lecture.createdAt)}</dd>
-						</div>
-						<div>
-							<dt>Durée</dt>
-							<dd>{formatDuration(lecture.audioMs)}</dd>
-						</div>
-						<div>
-							<dt>Audio</dt>
-							<dd>{formatBytes(lecture.audioBytes)}</dd>
-						</div>
-						{lecture.subject && (
-							<div>
-								<dt>Matière</dt>
-								<dd>
-									<span class="pill">
-										<span class="swatch" style={{ background: lecture.subject.color }}></span>
-										{lecture.subject.name}
-									</span>
-								</dd>
-							</div>
-						)}
-					</dl>
-
-					{(lecture.tags?.length ?? 0) > 0 && (
-						<>
-							<h2>Étiquettes</h2>
-							<ul>
-								{(lecture.tags || []).map((tag: { id: string; name: string; color: string }) => (
-									<li key={tag.id}>
-										<span class="swatch" style={{ background: tag.color }}></span>
-										{tag.name}
-									</li>
-								))}
-							</ul>
-						</>
-					)}
-				</aside>
-
-				<article>
-					<h1>{lectureTitle(lecture)}</h1>
-					{lecture.notes && <p class="lecture-notes">{lecture.notes}</p>}
-					<LectureResume source={req.data.resume} failed={req.data.resumeFailed} />
-				</article>
-
-				<LectureChat lectureId={lecture.id} nodeUrl={nodeUrl} />
+				<LectureChat
+					lectureId={lecture.id}
+					nodeUrl={url}
+					messages={req.data.chat}
+				/>
 
 				<LectureAudio
-					src={`${nodeUrl}/lectures/${lecture.id}/data/record`}
+					src={`${url}/lectures/${lecture.id}/data/record`}
 					audioMs={lecture.audioMs}
 				/>
 			</section>
@@ -108,19 +60,20 @@ export default {
 
 	onpost: null,
 	onrequest: async (req, res) => {
-		const nodeUrl = req.cookies.nodeUrl;
 		const lectureId = req.params.lectureId!;
-		const client = createClient(nodeUrl);
+		const client = createClient(req.cookies.nodeUrl);
 
-		const [lectureRes, resumeRes] = await Promise.all([
+		const [lectureRes, resumeRes, chatRes] = await Promise.all([
 			client.get("/lectures/:lectureId", { params: { lectureId } }),
-			fetch(`${String(nodeUrl).replace(/\/+$/, "")}/lectures/${encodeURIComponent(lectureId)}/data/resume`)
+			fetch(`${client.baseUrl}/lectures/${encodeURIComponent(lectureId)}/data/resume`)
 				.catch(() => null),
+			client.get("/lectures/:lectureId/chat", { params: { lectureId } }),
 		]);
 
 		if (!lectureRes.success || lectureRes.data.status !== SessionStatus.COMPLETED) return res.redirect("/");
 
 		req.data.lecture = lectureRes.data;
+		req.data.chat = chatRes.success ? chatRes.data : [];
 
 		if (!resumeRes || resumeRes.status === 404) {
 			req.data.resume = "";

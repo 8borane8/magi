@@ -1,6 +1,6 @@
 import type { Page } from "@webtools/slick-server";
 
-import SetNode from "../islands/auth/set-node.tsx";
+import SetNode from "../islands/set-node.tsx";
 
 export default {
 	url: "/set-node",
@@ -21,5 +21,7 @@ export default {
 	),
 
 	onpost: null,
-	onrequest: null,
+	onrequest: (_req, res) => {
+		if (Deno.env.get("MAGI_NODE_URL")) return res.redirect("/");
+	},
 } satisfies Page;

@@ -11,13 +11,14 @@ export default new Router()
 		]);
 		const counts = new Map<string, number>();
 		for (const link of links) {
-			counts.set(link.tagId, (counts.get(link.tagId) ?? 0) + 1);
+			counts.set(link.tagId, (counts.get(link.tagId) || 0) + 1);
 		}
 
 		return res.json({
-			items: tags.map((tag) => ({
+			success: true as const,
+			data: tags.map((tag) => ({
 				...tag.toJSON(),
-				lectureCount: counts.get(tag.id) ?? 0,
+				lectureCount: counts.get(tag.id) || 0,
 			})),
 		});
 	})
@@ -37,13 +38,14 @@ export default new Router()
 		},
 	)
 	.delete("/:tagId", async (req, res) => {
-		const deletedRowsCount = await Tag.destroy({ where: { id: req.params.tagId } });
-		if (deletedRowsCount === 0) {
+		const tag = await Tag.findByPk(req.params.tagId);
+		if (!tag) {
 			return res.status(404).json({
 				success: false,
 				error: "404 Not Found.",
 			});
 		}
 
+		await tag.destroy();
 		return res.json({ success: true });
 	});

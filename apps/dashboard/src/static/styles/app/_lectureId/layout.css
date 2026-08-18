@@ -14,7 +14,11 @@
 	overflow: hidden;
 }
 
-#lecture > div:first-child {
+.lecture-head {
+	display: contents;
+}
+
+#lecture-toolbar {
 	grid-area: toolbar;
 
 	display: flex;
@@ -30,7 +34,7 @@
 	border-bottom: 1px solid var(--color-border);
 }
 
-#lecture > div:first-child > a {
+#lecture-toolbar > a {
 	color: var(--color-text-muted);
 	font-size: var(--text-sm);
 	font-weight: 500;
@@ -52,11 +56,11 @@
 	text-decoration: none;
 }
 
-#lecture > div:first-child > a:hover {
+#lecture-toolbar > a:hover {
 	color: var(--color-text);
 }
 
-#lecture > div:first-child > div {
+#lecture-toolbar > div {
 	display: flex;
 	flex-direction: row;
 	justify-content: flex-end;
@@ -65,8 +69,8 @@
 	gap: var(--space-2);
 }
 
-#lecture > div:first-child > div > a,
-#lecture > div:first-child > div > button.btn-icon {
+#lecture-toolbar > div > a,
+#lecture-toolbar > div > button.btn-icon {
 	display: none;
 }
 
@@ -74,7 +78,7 @@
 	grid-area: meta;
 }
 
-#lecture > article {
+#lecture-fiche {
 	grid-area: fiche;
 }
 
@@ -96,15 +100,15 @@
 			"audio audio";
 	}
 
-	#lecture > div:first-child {
+	#lecture-toolbar {
 		padding: var(--space-3) var(--space-4);
 	}
 
-	#lecture > div:first-child > div > button.btn-icon {
+	#lecture-toolbar > div > button.btn-icon {
 		display: inline-flex;
 	}
 
-	#lecture > #lecture-meta {
+	#lecture-meta {
 		display: none;
 	}
 
@@ -117,17 +121,17 @@
 			"audio";
 	}
 
-	#lecture[data-info-open] > article,
+	#lecture[data-info-open] #lecture-fiche,
 	#lecture[data-info-open] > #lecture-chat,
 	#lecture[data-info-open] > div:last-child {
 		display: none;
 	}
 
-	#lecture[data-info-open] > #lecture-meta {
+	#lecture[data-info-open] #lecture-meta {
 		display: flex;
 	}
 
-	#lecture[data-info-open] > div:first-child > div > button.btn-icon {
+	#lecture[data-info-open] #lecture-toolbar > div > button.btn-icon {
 		color: var(--color-on-accent);
 		background: var(--color-accent);
 		border-color: var(--color-accent);
@@ -143,17 +147,17 @@
 			"audio";
 	}
 
-	#lecture > div:first-child > div > a {
+	#lecture-toolbar > div > a {
 		display: inline-flex;
 	}
 
-	#lecture > div:first-child > a > span,
-	#lecture > div:first-child > div > .btn > span {
+	#lecture-toolbar > a > span,
+	#lecture-toolbar > div > .btn > span {
 		display: none;
 	}
 
-	#lecture > div:first-child > a,
-	#lecture > div:first-child > div > .btn {
+	#lecture-toolbar > a,
+	#lecture-toolbar > div > .btn {
 		width: 2.25rem;
 		min-width: 2.25rem;
 		height: 2.25rem;

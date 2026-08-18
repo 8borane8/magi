@@ -15,7 +15,7 @@ RUN apt-get update \
 		libsndfile1 \
 	&& rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade-strategy only-if-needed whisperx
+RUN pip install --upgrade-strategy only-if-needed whisperx==3.8.6
 
 COPY --from=denoland/deno:bin-2.9.5 /deno /usr/local/bin/deno
 

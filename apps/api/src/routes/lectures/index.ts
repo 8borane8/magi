@@ -50,7 +50,7 @@ export default new Router()
 				where.id = { [Op.in]: links.map((link) => link.lectureId) };
 			}
 
-			const { rows, count } = await Lecture.findAndCountAll({
+			const { rows } = await Lecture.findAndCountAll({
 				where,
 				include: withRelations,
 				order: [["createdAt", "DESC"]],
@@ -61,12 +61,7 @@ export default new Router()
 
 			return res.json({
 				success: true as const,
-				data: {
-					rows: rows.map((lecture) => lecture.toJSON()),
-					total: count,
-					limit,
-					page,
-				},
+				data: rows.map((lecture) => lecture.toJSON()),
 			});
 		},
 		[],
@@ -91,10 +86,7 @@ export default new Router()
 
 		return res.json({
 			success: true,
-			data: {
-				lecture: lecture.toJSON(),
-				upload: recording.uploadState(lecture),
-			},
+			data: lecture.toJSON(),
 		});
 	})
 	.use(loadLecture)

@@ -56,7 +56,7 @@ export default function HomeSubjectsNav({
 								<span class="swatch" style={{ background: subject.color }}></span>
 								{subject.name}
 							</span>
-							<span>{counts.get(subject.id) ?? 0}</span>
+							<span>{counts.get(subject.id) || 0}</span>
 						</button>
 					</li>
 				))}

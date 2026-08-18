@@ -22,10 +22,7 @@ import { HttpServer } from "@webtools/expressapi";
 import mainRouter from "@/routes/index.ts";
 
 const httpServer = new HttpServer()
-	.onError((error) => {
-		console.error(error);
-	})
 	.use(mainRouter);
 
 export type AppRouter = typeof httpServer;
-httpServer.listen(Number(Deno.env.get("API_PORT")!));
+httpServer.listen(Number(Deno.env.get("API_PORT")));

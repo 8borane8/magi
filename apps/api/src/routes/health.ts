@@ -1,5 +1,4 @@
 import { Router } from "@webtools/expressapi";
-
 import { config } from "@/config.ts";
 
 export default new Router()

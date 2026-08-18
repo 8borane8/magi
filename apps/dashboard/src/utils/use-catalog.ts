@@ -15,7 +15,7 @@ const CONFIG = {
 		load: () => createClient().get("/subjects"),
 		save: (draft: CatalogDraft) =>
 			createClient().put("/subjects", {
-				body: { id: draft.id ?? undefined, name: draft.name.trim(), color: draft.color },
+				body: { id: draft.id || undefined, name: draft.name.trim(), color: draft.color },
 			}),
 		remove: (id: string) => createClient().delete("/subjects/:subjectId", { params: { subjectId: id } }),
 	},
@@ -24,30 +24,35 @@ const CONFIG = {
 		load: () => createClient().get("/tags"),
 		save: (draft: CatalogDraft) =>
 			createClient().put("/tags", {
-				body: { id: draft.id ?? undefined, name: draft.name.trim(), color: draft.color },
+				body: { id: draft.id || undefined, name: draft.name.trim(), color: draft.color },
 			}),
 		remove: (id: string) => createClient().delete("/tags/:tagId", { params: { tagId: id } }),
 	},
 } as const;
 
-export function useCatalog(kind: CatalogKind) {
+export function useCatalog(
+	kind: CatalogKind,
+	initial?: { items: CatalogRow[]; loadError: string | null },
+) {
 	const cfg = CONFIG[kind];
-	const items = useSignal<CatalogRow[]>([]);
+	const items = useSignal<CatalogRow[]>(initial?.items || []);
 	const draft = useSignal<CatalogDraft>({ ...DEFAULT_DRAFT });
-	const loadError = useSignal<string | null>(null);
+	const loadError = useSignal<string | null>(initial?.loadError || null);
 	const formError = useSignal<string | null>(null);
 
 	async function refresh() {
 		loadError.value = null;
 		try {
 			const res = await cfg.load();
-			items.value = res.items;
+			if (!res.success) throw new Error("load");
+			items.value = res.data;
 		} catch {
 			loadError.value = cfg.loadError;
 		}
 	}
 
 	useEffect(() => {
+		if (initial) return;
 		void refresh();
 	}, []);
 

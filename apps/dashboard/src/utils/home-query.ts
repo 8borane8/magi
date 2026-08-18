@@ -32,31 +32,27 @@ export function homeHref(state: HomeQueryState): string {
 
 export function readHomeQuery(search: string): HomeQueryState {
 	const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
-	const status = params.get("status") ?? "";
+	const status = params.get("status") || "";
 
 	return {
-		q: params.get("q") ?? "",
-		subject: params.get("subject") ?? "all",
+		q: params.get("q") || "",
+		subject: params.get("subject") || "all",
 		filters: {
-			tagId: params.get("tag") ?? "",
+			tagId: params.get("tag") || "",
 			status: Object.values(SessionStatus).includes(status as SessionStatus) ? status as SessionStatus : "",
-			from: params.get("from") ?? "",
-			to: params.get("to") ?? "",
+			from: params.get("from") || "",
+			to: params.get("to") || "",
 		},
 	};
 }
 
-function storedHomeHref(): string {
+export function homeHrefFromStorage(): string {
 	try {
-		return sessionStorage.getItem(STORAGE_KEY) || "/";
+		const href = sessionStorage.getItem(STORAGE_KEY) || "/";
+		return href.startsWith("/") ? href : "/";
 	} catch {
 		return "/";
 	}
-}
-
-export function homeHrefFromStorage(): string {
-	const href = storedHomeHref();
-	return href.startsWith("/") ? href : "/";
 }
 
 export function readHomeQueryFromBrowser(): HomeQueryState {

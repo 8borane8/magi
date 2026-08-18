@@ -1,11 +1,11 @@
 import { useSignal } from "@preact/signals";
-import { Cookies, Slick } from "@webtools/slick-client";
+import { Slick } from "@webtools/slick-client";
 import { Mic, PanelLeft, Search, SlidersHorizontal } from "lucide-preact";
 import { useEffect, useRef } from "preact/hooks";
 
 import HomeFilters, { EMPTY_HOME_FILTERS, type HomeFilters as Filters } from "../../components/home-filters.tsx";
 import HomeSubjectsNav from "../../components/home-subjects-nav.tsx";
-import { createClient } from "../../client.ts";
+import { createClient, nodeUrl } from "../../client.ts";
 import { recordSession } from "../../utils/record-session.ts";
 import { formatDuration, lectureTitle, STATUS_LABEL } from "../../utils/lecture-format.ts";
 import { readHomeQueryFromBrowser, writeHomeQuery } from "../../utils/home-query.ts";
@@ -25,9 +25,9 @@ function loadLectures(client: Client) {
 	return client.get("/lectures", { query: { limit: 1, page: 1 } });
 }
 
-type SubjectItem = Awaited<ReturnType<typeof loadSubjects>>["items"][number];
-type TagItem = Awaited<ReturnType<typeof loadTags>>["items"][number];
-type LectureRow = Awaited<ReturnType<typeof loadLectures>>["data"]["rows"][number] & {
+type SubjectItem = Extract<Awaited<ReturnType<typeof loadSubjects>>, { success: true }>["data"]["items"][number];
+type TagItem = Extract<Awaited<ReturnType<typeof loadTags>>, { success: true }>["data"]["items"][number];
+type LectureRow = Extract<Awaited<ReturnType<typeof loadLectures>>, { success: true }>["data"]["rows"][number] & {
 	tags?: Pick<TagItem, "id" | "name" | "color">[];
 };
 
@@ -44,7 +44,7 @@ function liveRow(lecture: LectureRow): LectureRow {
 }
 
 function lectureRowInner(lecture: LectureRow) {
-	const tags = lecture.tags ?? [];
+	const tags = lecture.tags || [];
 	return (
 		<>
 			<strong>{lectureTitle(lecture)}</strong>
@@ -58,7 +58,7 @@ function lectureRowInner(lecture: LectureRow) {
 			</span>
 			<time>{formatDuration(lecture.audioMs)}</time>
 			<span class="pill" data-status={lecture.status}>
-				{STATUS_LABEL[lecture.status as SessionStatus] ?? lecture.status}
+				{STATUS_LABEL[lecture.status as SessionStatus] || lecture.status}
 			</span>
 		</>
 	);
@@ -82,7 +82,7 @@ function countBySubject(lectures: LectureRow[]): Map<string, number> {
 	const counts = new Map<string, number>();
 	for (const lecture of lectures) {
 		if (!lecture.subjectId) continue;
-		counts.set(lecture.subjectId, (counts.get(lecture.subjectId) ?? 0) + 1);
+		counts.set(lecture.subjectId, (counts.get(lecture.subjectId) || 0) + 1);
 	}
 	return counts;
 }
@@ -90,7 +90,7 @@ function countBySubject(lectures: LectureRow[]): Map<string, number> {
 function groupLectures(visible: LectureRow[], subjects: SubjectItem[]) {
 	const grouped = new Map<string, LectureRow[]>();
 	for (const lecture of visible) {
-		const key = lecture.subjectId ?? "";
+		const key = lecture.subjectId || "";
 		const list = grouped.get(key);
 		if (list) list.push(lecture);
 		else grouped.set(key, [lecture]);
@@ -120,7 +120,17 @@ function applyHomeQuery(
 	filters.value = { ...state.filters };
 }
 
-export default function Home() {
+export default function Home({
+	subjects: initialSubjects,
+	tags: initialTags,
+	lectures: initialLectures,
+	error: initialError,
+}: {
+	subjects?: SubjectItem[];
+	tags?: TagItem[];
+	lectures?: LectureRow[];
+	error?: string | null;
+}) {
 	const q = useSignal("");
 	const appliedQ = useSignal("");
 	const subjectFilter = useSignal("all");
@@ -129,10 +139,10 @@ export default function Home() {
 	const filtersOpen = useSignal(false);
 	const subjectsOpen = useSignal(false);
 
-	const subjects = useSignal<SubjectItem[]>([]);
-	const tags = useSignal<TagItem[]>([]);
-	const lectures = useSignal<LectureRow[]>([]);
-	const error = useSignal<string | null>(null);
+	const subjects = useSignal<SubjectItem[]>(Array.isArray(initialSubjects) ? initialSubjects : []);
+	const tags = useSignal<TagItem[]>(Array.isArray(initialTags) ? initialTags : []);
+	const lectures = useSignal<LectureRow[]>(Array.isArray(initialLectures) ? initialLectures : []);
+	const error = useSignal<string | null>(initialError || null);
 	const filtersRef = useRef<HTMLButtonElement>(null);
 	const recTick = useSignal(0);
 	void recTick.value;
@@ -142,7 +152,7 @@ export default function Home() {
 	}
 
 	async function load() {
-		if (!Cookies.get("nodeUrl")) return;
+		if (!nodeUrl()) return;
 		error.value = null;
 		try {
 			const client = createClient();
@@ -161,9 +171,12 @@ export default function Home() {
 					},
 				}),
 			]);
-			subjects.value = subjectsRes.items;
-			tags.value = tagsRes.items;
-			lectures.value = lecturesRes.data.rows;
+			if (!subjectsRes.success || !tagsRes.success || !lecturesRes.success) {
+				throw new Error("load");
+			}
+			subjects.value = subjectsRes.data;
+			tags.value = tagsRes.data;
+			lectures.value = lecturesRes.data;
 		} catch {
 			error.value = "Impossible de charger le catalogue.";
 		}
@@ -186,8 +199,9 @@ export default function Home() {
 		applyHomeQuery(q, appliedQ, subjectFilter, filters);
 		syncQuery();
 
+		let active = true;
 		const onNavigate = () => {
-			if (globalThis.location.pathname !== "/") return;
+			if (!active || globalThis.location.pathname !== "/") return;
 			applyHomeQuery(q, appliedQ, subjectFilter, filters);
 			syncQuery();
 			void load();
@@ -196,7 +210,10 @@ export default function Home() {
 		void load();
 		globalThis.addEventListener("popstate", onNavigate);
 		Slick.addOnloadListener(onNavigate);
-		return () => globalThis.removeEventListener("popstate", onNavigate);
+		return () => {
+			active = false;
+			globalThis.removeEventListener("popstate", onNavigate);
+		};
 	}, []);
 
 	useEffect(() => {
@@ -270,6 +287,19 @@ export default function Home() {
 		void load();
 	}
 
+	async function retryLecture(lectureId: string) {
+		error.value = null;
+		try {
+			const result = await createClient().post("/lectures/:lectureId/retry", {
+				params: { lectureId },
+			});
+			if (!result.success) throw new Error("retry");
+			void load();
+		} catch {
+			error.value = "Impossible de relancer le traitement.";
+		}
+	}
+
 	function renderRow(row: LectureRow) {
 		const inner = lectureRowInner(row);
 		const selected = recordSession.lectureId === row.id;
@@ -292,6 +322,22 @@ export default function Home() {
 				>
 					{inner}
 				</button>
+			);
+		}
+
+		if (row.status === SessionStatus.FAILED) {
+			return (
+				<div class="lecture-row" aria-current={selected ? "true" : undefined}>
+					{inner}
+					<button
+						type="button"
+						class="btn"
+						disabled={busy}
+						onClick={() => void retryLecture(row.id)}
+					>
+						Relancer
+					</button>
+				</div>
 			);
 		}
 

@@ -1,8 +1,8 @@
 import { useSignal } from "@preact/signals";
-import { Cookies } from "@webtools/slick-client";
+import { Cookies, Slick } from "@webtools/slick-client";
 import { useEffect } from "preact/hooks";
 
-import { pingNode } from "../../client.ts";
+import { createClient } from "../client.ts";
 
 export default function SetNode() {
 	const url = useSignal("http://localhost:5050");
@@ -29,16 +29,18 @@ export default function SetNode() {
 			return;
 		}
 
-		const ok = await pingNode(origin);
-		pending.value = false;
-
-		if (!ok) {
+		try {
+			await createClient(origin).get("/health");
+		} catch {
+			pending.value = false;
 			error.value = "Impossible de joindre le noeud.";
 			return;
 		}
 
+		pending.value = false;
+
 		Cookies.set("nodeUrl", origin);
-		location.replace("/");
+		await Slick.redirect("/");
 	}
 
 	return (

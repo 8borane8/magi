@@ -1,4 +1,4 @@
-import { type HttpResponse, Router, z } from "@webtools/expressapi";
+import { Router, z } from "@webtools/expressapi";
 
 import { ChatMessage, ChatRole } from "@/models/chat-message.ts";
 import type { Lecture } from "@/models/lecture.ts";
@@ -10,13 +10,6 @@ import { config } from "@/config.ts";
 const chatImage = z.file()
 	.type(["image/jpeg", "image/png", "image/webp", "image/gif"])
 	.maxSize(config.maxChatImageBytes);
-
-function notFound(res: HttpResponse) {
-	return res.status(404).json({
-		success: false as const,
-		error: "404 Not Found.",
-	});
-}
 
 export default new Router<{ lecture: Lecture }>()
 	.get("/:lectureId/chat", async (req, res) => {
@@ -32,15 +25,20 @@ export default new Router<{ lecture: Lecture }>()
 	})
 	.get("/:lectureId/chat/:fileName", (req, res) => {
 		const { fileName } = req.params;
-		if (!storage.isSafeChatFileName(fileName)) return notFound(res);
+		if (!storage.isSafeChatFileName(fileName)) {
+			return res.status(404).json({
+				success: false as const,
+				error: "404 Not Found.",
+			});
+		}
 		return sendFile(req, res, storage.chatFilePath(req.data.lecture.id, fileName));
 	})
 	.post(
 		"/:lectureId/chat",
 		async (req, res) => {
 			const lecture = req.data.lecture;
-			const content = (req.body.content ?? "").trim();
-			const images = [req.body.images ?? []].flat();
+			const content = (req.body.content || "").trim();
+			const images = [req.body.images || []].flat();
 
 			if (!content && images.length === 0) {
 				return res.status(400).json({
@@ -81,6 +79,14 @@ export default new Router<{ lecture: Lecture }>()
 				});
 			} catch (error) {
 				console.error(error);
+				await user.destroy();
+				for (const item of attachments) {
+					try {
+						await Deno.remove(storage.chatFilePath(lecture.id, item.path));
+					} catch {
+						// Already gone.
+					}
+				}
 				return res.status(502).json({
 					success: false as const,
 					error: "ai_unavailable",

@@ -1,10 +1,10 @@
-import CatalogPage, { type CatalogCopy } from "../../components/catalog-page.tsx";
+import CatalogPage, { type CatalogCopy, type CatalogRow } from "../../components/catalog-page.tsx";
 import { type CatalogKind, useCatalog } from "../../utils/use-catalog.ts";
 
 const COPY: Record<CatalogKind, CatalogCopy> = {
 	subjects: {
 		heading: "Matières",
-		intro: "Classe tes cours par matière. Magi en propose une à la fin d'un enregistrement.",
+		intro: "Classez vos cours par matière. Magi en propose une à la fin d'un enregistrement.",
 		createLabel: "Nouvelle matière",
 		createTitle: "Nouvelle matière",
 		editTitle: "Modifier la matière",
@@ -26,8 +26,19 @@ const COPY: Record<CatalogKind, CatalogCopy> = {
 	},
 };
 
-export default function Catalog({ kind }: { kind: CatalogKind }) {
-	const catalog = useCatalog(kind);
+export default function Catalog({
+	kind,
+	items,
+	loadError,
+}: {
+	kind: CatalogKind;
+	items?: CatalogRow[];
+	loadError?: string | null;
+}) {
+	const catalog = useCatalog(
+		kind,
+		Array.isArray(items) ? { items, loadError: loadError || null } : undefined,
+	);
 
 	return (
 		<CatalogPage

@@ -1,6 +1,6 @@
 @import url("https://esm.sh/katex@0.18.4/dist/katex.min.css");
 
-#lecture > article {
+#lecture-fiche {
 	min-width: 0;
 	min-height: 0;
 
@@ -22,14 +22,14 @@
 	overflow: auto;
 }
 
-#lecture > article > h1 {
+#lecture-fiche > h1 {
 	font-family: var(--font-serif);
 	font-size: clamp(1.75rem, 3vw, 2.25rem);
 	font-weight: 600;
 	line-height: 1.15;
 }
 
-#lecture > article > .lecture-notes {
+#lecture-fiche > .lecture-notes {
 	max-width: 40rem;
 
 	color: var(--color-text);
@@ -49,11 +49,11 @@
 	border-radius: var(--radius-sm);
 }
 
-#lecture > article > p:not(.lecture-notes) {
+#lecture-fiche > p:not(.lecture-notes) {
 	color: var(--color-text-muted);
 }
 
-#lecture > article > .markdown {
+#lecture-fiche > .markdown {
 	width: 100%;
 	max-width: 48rem;
 }
@@ -849,17 +849,17 @@
 }
 
 @media (max-width: 1100px) {
-	#lecture > article {
+	#lecture-fiche {
 		padding: var(--space-5) var(--space-4);
 	}
 }
 
 @media (max-width: 640px) {
-	#lecture > article {
+	#lecture-fiche {
 		padding: var(--space-4);
 	}
 
-	#lecture > article > h1 {
+	#lecture-fiche > h1 {
 		font-size: 1.5rem;
 	}
 
@@ -891,7 +891,7 @@
 	#root,
 	#app,
 	#lecture,
-	#lecture > article {
+	#lecture-fiche {
 		width: 100%;
 		height: auto;
 		max-height: none;
@@ -905,18 +905,18 @@
 
 	header,
 	#record-bar,
-	#lecture > div,
-	#lecture > aside,
-	#lecture > article > h1,
-	#lecture > article > .lecture-notes {
+	#lecture-toolbar,
+	#lecture-meta,
+	#lecture-fiche > h1,
+	#lecture-fiche > .lecture-notes {
 		display: none;
 	}
 
-	#lecture > article {
+	#lecture-fiche {
 		padding: 0;
 	}
 
-	#lecture > article,
+	#lecture-fiche,
 	.markdown {
 		--fiche-def: #3e4a9a;
 		--fiche-def-bg: #dfe2f2;
