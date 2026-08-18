@@ -1,32 +1,21 @@
-FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+FROM pytorch/pytorch:2.8.0-cuda12.6-cudnn9-runtime
 
 ENV DEBIAN_FRONTEND=noninteractive \
 	PYTHONUNBUFFERED=1 \
 	PIP_DISABLE_PIP_VERSION_CHECK=1 \
 	PIP_DEFAULT_TIMEOUT=1000 \
-	PIP_RETRIES=15 \
 	DENO_DIR=/deno-dir \
 	MAGI_DATA_DIR=/data
 
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		ca-certificates \
-		curl \
 		ffmpeg \
 		git \
 		libsndfile1 \
-		python3 \
-		python3-pip \
-	&& ln -sf /usr/bin/python3 /usr/bin/python \
 	&& rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --upgrade pip
-
-RUN --mount=type=cache,target=/root/.cache/pip \
-	pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-
-RUN --mount=type=cache,target=/root/.cache/pip \
-	pip3 install whisperx --extra-index-url https://download.pytorch.org/whl/cu124
+RUN pip install --upgrade-strategy only-if-needed whisperx
 
 COPY --from=denoland/deno:bin-2.9.5 /deno /usr/local/bin/deno
 

@@ -40,7 +40,7 @@ cp .env.example .env
 docker compose --profile all up
 ```
 
-Le premier lancement télécharge les images, WhisperX, et les modèles Ollama (`llama3.2`, `llava`). Comptez plusieurs gigaoctets et un délai long.
+Le premier lancement télécharge l'image PyTorch/CUDA, WhisperX, Ollama et les modèles (`llama3.2`, `llava`). Comptez plusieurs gigaoctets. Les rebuilds suivants ne rechargent que le code Magi.
 
 Puis ouvrez [http://localhost:5000](http://localhost:5000), indiquez l'URL du nœud (`http://localhost:5050` en local), et enregistrez un cours.
 
