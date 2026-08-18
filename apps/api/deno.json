@@ -4,8 +4,9 @@
 	"exports": "./src/mod.ts",
 
 	"tasks": {
+		"start": "deno run -A ./src/index.ts",
 		"build": "deno run -A --env-file ./src/index.ts",
-		"dev": "deno run -A --watch --env-file=.env.example ./src/index.ts"
+		"dev": "deno run -A --watch --env-file ./src/index.ts"
 	},
 
 	"imports": {

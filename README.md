@@ -1,203 +1,126 @@
 # Magi
 
-**Magi** est un logiciel auto-hébergé d'enregistrement et d'exploitation de cours magistraux par IA.
+Logiciel auto-hébergé d'enregistrement et d'exploitation de cours magistraux par IA.
 
-On lance un enregistrement au début du cours, on l'arrête à la fin, et Magi s'occupe du reste : transcription complète,
-classement automatique dans la bonne matière, labellisation par tags, et à terme résumé, chat de révision et génération
-de quiz.
+On lance un enregistrement au début du cours, on l'arrête à la fin : Magi transcrit, classe le cours dans la bonne matière, propose des étiquettes, rédige une fiche, et permet de poser des questions à un « prof » local.
 
-Tout tourne sur **votre** machine. Aucun audio de cours, aucune transcription et aucune donnée personnelle ne quitte
-votre réseau : ni cloud, ni API tierce, ni abonnement.
-
----
+Tout tourne sur **votre** machine. Aucun audio, aucune transcription et aucune donnée personnelle ne quitte votre réseau : ni cloud, ni API tierce, ni abonnement.
 
 ## Pourquoi Magi
 
-Les outils de prise de notes par IA existants sont des SaaS : l'audio de vos cours part sur des serveurs distants, la
-facture tombe tous les mois, et la donnée ne vous appartient plus.
+Les outils de prise de notes par IA existants sont des SaaS : l'audio de vos cours part sur des serveurs distants, la facture tombe tous les mois, et la donnée ne vous appartient plus.
 
-Magi part du principe inverse. Le traitement IA est aujourd'hui suffisamment mature pour tourner en local sur une
-machine grand public équipée d'un GPU. Le seul coût est celui de l'électricité, et la bibliothèque de cours reste un
-dossier de fichiers sur un disque que vous contrôlez.
-
----
-
-## Principes d'architecture
-
-### Self-hosté de bout en bout
-
-Magi s'installe sur une machine que vous possédez : PC fixe, serveur maison, NAS avec GPU. Cette machine héberge la base
-de données, les fichiers audio, les transcriptions et les modèles d'IA. Aucune dépendance à un service en ligne pour
-fonctionner.
-
-### Dissociation client / worker
-
-L'architecture sépare deux rôles, ce qui permet d'enregistrer un cours depuis un appareil léger tout en faisant
-travailler une machine puissante restée à la maison.
-
-| Rôle                            | Où il tourne                                           | Ce qu'il fait                                                             |
-| ------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------- |
-| **Client** (`apps/dashboard`)   | Laptop, téléphone, tablette, n'importe quel navigateur | Capture le micro, streame l'audio, affiche la bibliothèque de cours       |
-| **Worker / noeud** (`apps/api`) | Machine locale avec GPU, allumée à la maison           | Stocke l'audio et la base, exécute la transcription et les traitements IA |
-
-Le client ne fait que capturer et afficher : il n'a besoin ni de GPU, ni d'espace disque, ni de rester allumé pendant le
-traitement. Un cours enregistré depuis un téléphone en amphi est transcrit par la machine du domicile, et le résultat
-est disponible sur tous les appareils connectés au noeud.
-
-Le lien entre les deux se fait sur le réseau local, ou à distance via un VPN maillé type
-[Tailscale](https://tailscale.com/), sans ouvrir de port sur Internet.
-
-### Traitement IA 100 % local (prévu)
-
-| Brique                                             | Rôle                                                                                                                                     |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **[WhisperX](https://github.com/m-bain/whisperX)** | Transcription de l'audio, alignement des mots sur la timeline, séparation des locuteurs (professeur, questions de la salle)              |
-| **[Ollama](https://ollama.com/)**                  | Exécution des modèles de langage locaux pour le classement automatique, les tags, et les futures fonctionnalités de résumé, chat et quiz |
-
-Les deux s'exécuteront comme des services locaux appelés par le noeud. Le choix des modèles sera libre et se réglera
-selon le GPU disponible.
-
----
-
-## Démarrage rapide
-
-Prérequis : [Deno](https://deno.com/) 2.x installé.
-
-### 1. Lancer le noeud
-
-```bash
-cd apps/api
-cp .env.example .env   # API_PORT=5050, MAGI_DATA_DIR=./data
-deno task dev
-```
-
-Le noeud écoute sur `http://localhost:5050`. Les cours et la base SQLite sont stockés dans `apps/api/data/`.
-
-### 2. Lancer le dashboard
-
-Dans un second terminal :
-
-```bash
-cd apps/dashboard
-cp .env.example .env   # DASHBOARD_PORT=5000
-deno task dev
-```
-
-Ouvrir `http://localhost:5000`, renseigner l'URL du noeud (`http://localhost:5050` en local), puis accéder à l'accueil.
-
-### 3. Enregistrer un cours
-
-Depuis l'accueil, cliquer sur **Nouveau cours** (ou le bouton micro en mobile). L'audio est capturé dans le navigateur
-et envoyé au noeud par fragments toutes les 5 secondes. La barre d'enregistrement reste visible pendant la navigation
-dans l'application. Pause, reprise et arrêt sont disponibles depuis cette barre ou en cliquant un cours en pause dans la
-liste.
-
----
+Magi part du principe inverse. Le traitement IA tourne en local sur une machine équipée d'un GPU. Le seul coût est celui de l'électricité, et la bibliothèque de cours reste un dossier de fichiers sur un disque que vous contrôlez.
 
 ## Fonctionnalités
 
-### Enregistrement des cours (disponible)
+- **Enregistrement** depuis le navigateur (pause, reprise, streaming par fragments). Pas d'application à installer.
+- **Bibliothèque** : recherche, filtres, matières, étiquettes, lecteur audio.
+- **Transcription** locale via [WhisperX](https://github.com/m-bain/whisperX) dès l'arrêt de l'enregistrement.
+- **Classement** via [Ollama](https://ollama.com/) : titre, matière, étiquettes proposés automatiquement (modifiables).
+- **Fiche de cours** structurée (définitions, théorèmes, propositions, démonstrations).
+- **Chat prof** sur un cours, y compris avec des images.
 
-Enregistrement audio depuis le navigateur, sans application à installer. La session supporte la pause et la reprise ;
-l'audio est streamé au noeud au fil de l'eau. Si le navigateur se ferme sans arrêt propre, le noeud met la session en
-pause automatiquement après 15 secondes sans fragment reçu.
+Pas encore : quiz, diarisation, banque de théorèmes, carte mentale.
 
-Cycle de vie côté noeud : `recording`, `paused`, `processing`, `completed`, `failed`.
+## Prérequis
 
-Comportements notables côté client :
+- [Docker](https://docs.docker.com/get-docker/) avec Compose
+- Un GPU **NVIDIA** et le [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) (sous Windows : Docker Desktop + WSL2)
+- Environ 8 Go de VRAM minimum, 12 Go conseillés (`large-v2` + `llama3.2` + `llava`)
 
-- barre d'enregistrement globale, persistante lors des navigations SPA ;
-- reprise d'une session en pause (micro + barre) ;
-- sauvegarde locale légère (`sessionStorage`) pour retrouver une session après rechargement de page.
+Sans GPU, mettez `WHISPERX_DEVICE=cpu` et `WHISPERX_COMPUTE_TYPE=int8` dans `.env`. C'est nettement plus lent, et il faudra retirer la réserve GPU dans `docker-compose.yml`.
 
-### Bibliothèque (disponible)
+## Installation
 
-Accueil avec liste des cours, recherche plein texte, filtres (statut, étiquette, dates), navigation par matière. Lecture
-audio enregistré. Page cours pour les sessions terminées (métadonnées, notes, lecteur audio).
+```bash
+git clone https://github.com/8borane8/magi.git
+cd magi
+cp .env.example .env
+docker compose --profile all up
+```
 
-### Matières et étiquettes (disponible)
+Le premier lancement télécharge les images, WhisperX, et les modèles Ollama (`llama3.2`, `llava`). Comptez plusieurs gigaoctets et un délai long.
 
-CRUD des matières et des étiquettes (nom, couleur). Compteur de cours par matière.
+Puis ouvrez [http://localhost:5000](http://localhost:5000), indiquez l'URL du nœud (`http://localhost:5050` en local), et enregistrez un cours.
 
-### Transcription automatique (à venir)
+## Modes
 
-Dès la fin de l'enregistrement, le cours partira en file de traitement. WhisperX produira une transcription horodatée
-mot à mot, avec recherche plein texte et synchronisation audio/texte.
+Ollama et WhisperX sont inclus dans le nœud. On ne les lance jamais à part.
 
-### Rangement et labellisation automatiques (à venir)
+| Commande | Ce qui tourne | set-node |
+| --- | --- | --- |
+| `docker compose --profile all up` | nœud + dashboard | `http://localhost:5050` |
+| `docker compose --profile api up` | nœud seul (API, WhisperX, Ollama) | un dashboard ailleurs s'y connecte |
+| `docker compose --profile dashboard up` | dashboard seul | **obligatoire** : URL du nœud distant |
 
-Un modèle local analysera la transcription pour proposer matière, titre, tags et description. Le classement restera
-modifiable à la main.
+## Configuration
 
----
+Copiez `.env.example` vers `.env` à la racine, puis ajustez au besoin.
 
-## Fonctionnalités à venir
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `DASHBOARD_PORT` | `5000` | Port du dashboard |
+| `API_PORT` | `5050` | Port du nœud |
+| `OLLAMA_CHAT_MODEL` | `llama3.2` | Classement, fiche, chat texte |
+| `OLLAMA_VISION_MODEL` | `llava` | Chat avec images |
+| `WHISPERX_MODEL` | `large-v2` | Modèle de transcription |
+| `WHISPERX_LANGUAGE` | `fr` | Langue |
+| `WHISPERX_DEVICE` | `cuda` | `cuda` ou `cpu` |
+| `WHISPERX_COMPUTE_TYPE` | `float16` | `float16` (GPU) ou `int8` (CPU) |
 
-- **Pipeline WhisperX** : transcription et diarisation après l'arrêt d'un enregistrement.
-- **Classement Ollama** : titre, matière, tags et description proposés automatiquement.
-- **Résumé automatique** : synthèse structurée exportable en Markdown.
-- **Chat IA sur les cours** : questions en langage naturel avec citations horodatées.
-- **Génération de quiz et d'exercices** : révision active à partir du contenu du cours.
-- **Fiches de révision** : agrégation de plusieurs cours d'une matière.
-- **Export** : Markdown, PDF, intégration avec les outils de prise de notes existants.
+Les cours, la base SQLite et l'audio sont dans le volume Docker `magi-data`. En développement Deno : `apps/api/data/` (non versionné).
 
----
+## Architecture
 
-## Stack technique
+| Rôle | Où | Rôle réel |
+| --- | --- | --- |
+| **Client** (`apps/dashboard`) | Navigateur (laptop, téléphone) | Capture le micro, affiche la bibliothèque |
+| **Nœud** (`apps/api`) | Machine avec GPU | Stocke l'audio et la base, transcrit, lance l'IA |
 
-| Couche             | Technologie                                                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Runtime            | [Deno](https://deno.com/) (monorepo en workspace)                                                           |
-| Langage            | TypeScript                                                                                                  |
-| API                | `@webtools/expressapi`                                                                                      |
-| Base de données    | SQLite via [Sequelize](https://sequelize.org/) v7                                                           |
-| Frontend           | [Slick](https://jsr.io/@webtools/slick-server) et [Preact](https://preactjs.com/) (rendu serveur + islands) |
-| Transcription      | WhisperX (prévu)                                                                                            |
-| Modèles de langage | Ollama (prévu)                                                                                              |
+Le client n'a besoin ni de GPU ni de rester allumé pendant le traitement. Un cours enregistré depuis un téléphone est transcrit par la machine restée à la maison.
 
-### Organisation du dépôt
+Cycle de vie d'un cours : `recording` → `paused` → `processing` → `completed` ou `failed`. Après l'arrêt : WhisperX, puis classement Ollama, puis fiche.
+
+## Développement sans Docker
+
+Prérequis : [Deno](https://deno.com/) 2.x, [WhisperX](https://github.com/m-bain/whisperX) dans le `PATH`, [Ollama](https://ollama.com/) en local avec les modèles `llama3.2` et `llava`.
+
+```bash
+cd apps/api
+cp .env.example .env
+deno task dev
+```
+
+```bash
+cd apps/dashboard
+cp .env.example .env
+deno task dev
+```
+
+Ouvrir `http://localhost:5000` et indiquer `http://localhost:5050`.
 
 ```
 magi/
 ├── apps/
-│   ├── api/              # Noeud : API HTTP, SQLite, stockage audio
-│   │   └── src/
-│   │       ├── models/       # Modèles Sequelize (cours, matières, tags)
-│   │       ├── routes/       # Endpoints REST
-│   │       └── services/     # Enregistrement, stockage disque
-│   └── dashboard/        # Client web Slick + Preact
-│       └── src/
-│           ├── pages/        # Routes SSR
-│           ├── templates/    # Layouts (app, auth)
-│           ├── islands/      # UI interactive hydratée
-│           ├── components/   # Markup réutilisable
-│           ├── utils/        # Session d'enregistrement, client HTTP
-│           └── static/       # CSS (tokens, ui, pages), scripts, assets
-└── shared/               # Types partagés (`SessionStatus`, etc.)
+│   ├── api/          # Nœud : HTTP, SQLite, WhisperX, Ollama
+│   └── dashboard/    # Client web (Slick + Preact)
+├── shared/           # Types partagés
+├── docker/           # Images Compose
+└── docker-compose.yml
 ```
 
----
+| Couche | Technologie |
+| --- | --- |
+| Runtime | Deno (monorepo en workspace) |
+| API | `@webtools/expressapi`, SQLite (Sequelize) |
+| Frontend | Slick + Preact |
+| Transcription | WhisperX |
+| LLM | Ollama |
 
-## État du projet
+## Contribuer
 
-Magi est en **développement actif**. Le socle d'enregistrement et de bibliothèque est utilisable en local ; le pipeline
-IA n'est pas encore branché.
-
-| Domaine                        | État                      |
-| ------------------------------ | ------------------------- |
-| Noeud HTTP + SQLite            | OK                        |
-| Streaming audio par chunks     | OK                        |
-| Pause / reprise / arrêt        | OK                        |
-| Dashboard (accueil, catalogue) | OK                        |
-| Matières et étiquettes         | OK                        |
-| Page cours + lecteur audio     | OK (sessions `completed`) |
-| Transcription WhisperX         | Non démarré               |
-| Classement et tags via Ollama  | Non démarré               |
-| Résumé, chat, quiz             | Maquettes / placeholders  |
-
-Les données de développement (SQLite, fichiers `.webm`) vivent dans `apps/api/data/` et ne doivent pas être versionnées.
-
----
+Le projet est en développement actif. `deno fmt` à la racine avant une PR. L'interface est en français.
 
 ## Licence
 
