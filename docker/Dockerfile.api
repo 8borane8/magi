@@ -21,7 +21,7 @@ RUN apt-get update \
 RUN pip3 install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu124 \
 	&& pip3 install --no-cache-dir whisperx
 
-COPY --from=denoland/deno:2 /usr/bin/deno /usr/bin/deno
+COPY --from=denoland/deno:bin-2.9.5 /deno /usr/local/bin/deno
 
 WORKDIR /app
 

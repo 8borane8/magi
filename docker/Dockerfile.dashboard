@@ -1,4 +1,4 @@
-FROM denoland/deno:2
+FROM denoland/deno:2.9.5
 
 ENV DENO_DIR=/deno-dir
 
@@ -20,4 +20,4 @@ RUN deno cache src/index.ts
 
 EXPOSE 5000
 
-CMD ["deno", "task", "start"]
+CMD ["task", "start"]
