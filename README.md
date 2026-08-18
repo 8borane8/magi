@@ -26,10 +26,7 @@ Pas encore : quiz, diarisation, banque de théorèmes, carte mentale.
 ## Prérequis
 
 - [Docker](https://docs.docker.com/get-docker/) avec Compose
-- Un GPU **NVIDIA** et le [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) (sous Windows : Docker Desktop + WSL2)
-- Environ 8 Go de VRAM minimum, 12 Go conseillés (`large-v2` + `llama3.2` + `llava`)
-
-Sans GPU, mettez `WHISPERX_DEVICE=cpu` et `WHISPERX_COMPUTE_TYPE=int8` dans `.env`. C'est nettement plus lent, et il faudra retirer la réserve GPU dans `docker-compose.yml`.
+- Un GPU **NVIDIA** est recommandé (8 Go de VRAM mini, 12 Go conseillés)
 
 ## Installation
 
@@ -40,9 +37,20 @@ cp .env.example .env
 docker compose --profile all up
 ```
 
-Le premier lancement télécharge l'image PyTorch/CUDA, WhisperX, Ollama et les modèles (`llama3.2`, `llava`). Comptez plusieurs gigaoctets. Les rebuilds suivants ne rechargent que le code Magi.
+Le premier lancement télécharge l'image PyTorch, WhisperX, Ollama et les modèles (`llama3.2`, `llava`). Comptez plusieurs gigaoctets. Les rebuilds suivants ne rechargent que le code Magi.
 
 Puis ouvrez [http://localhost:5000](http://localhost:5000), indiquez l'URL du nœud (`http://localhost:5050` en local), et enregistrez un cours.
+
+Sans GPU, WhisperX tourne en CPU (`WHISPERX_DEVICE=cpu`). C'est nettement plus lent.
+
+### GPU NVIDIA
+
+Docker doit voir la carte. Sous Windows : driver NVIDIA à jour, Docker Desktop en WSL2, et `nvidia-smi` doit marcher **dans WSL**. Ensuite :
+
+```bash
+# dans .env : WHISPERX_DEVICE=cuda et WHISPERX_COMPUTE_TYPE=float16
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile all up
+```
 
 ## Modes
 

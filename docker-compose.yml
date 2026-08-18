@@ -12,13 +12,6 @@ services:
         volumes:
             - ollama:/root/.ollama
             - ./docker/ollama-init.sh:/ollama-init.sh:ro
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                        - driver: nvidia
-                          count: all
-                          capabilities: [gpu]
 
     api:
         profiles: ["all", "api"]
@@ -40,18 +33,11 @@ services:
             WHISPERX_BIN: whisperx
             WHISPERX_MODEL: ${WHISPERX_MODEL:-large-v2}
             WHISPERX_LANGUAGE: ${WHISPERX_LANGUAGE:-fr}
-            WHISPERX_DEVICE: ${WHISPERX_DEVICE:-cuda}
-            WHISPERX_COMPUTE_TYPE: ${WHISPERX_COMPUTE_TYPE:-float16}
+            WHISPERX_DEVICE: ${WHISPERX_DEVICE:-cpu}
+            WHISPERX_COMPUTE_TYPE: ${WHISPERX_COMPUTE_TYPE:-int8}
         volumes:
             - magi-data:/data
             - whisperx-cache:/root/.cache
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                        - driver: nvidia
-                          count: all
-                          capabilities: [gpu]
 
     dashboard:
         profiles: ["all", "dashboard"]
