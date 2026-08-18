@@ -345,17 +345,16 @@ export default function Home({
 
 		if (row.status === SessionStatus.FAILED) {
 			return (
-				<div class="lecture-row" aria-current={selected ? "true" : undefined}>
+				<button
+					type="button"
+					class="lecture-row"
+					aria-current={selected ? "true" : undefined}
+					disabled={busy}
+					aria-label={`Relancer le traitement : ${lectureTitle(row)}`}
+					onClick={() => void retryLecture(row.id)}
+				>
 					{inner}
-					<button
-						type="button"
-						class="btn"
-						disabled={busy}
-						onClick={() => void retryLecture(row.id)}
-					>
-						Relancer
-					</button>
-				</div>
+				</button>
 			);
 		}
 

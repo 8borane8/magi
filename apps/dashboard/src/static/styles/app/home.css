@@ -477,14 +477,6 @@ div.lecture-row {
 	justify-self: center;
 }
 
-.lecture-row:has(> .btn) {
-	grid-template-columns: minmax(0, 1fr) minmax(0, auto) 4rem 6rem auto;
-}
-
-.lecture-row > .btn {
-	justify-self: end;
-}
-
 .lecture-tags {
 	display: flex;
 	flex-direction: row;
@@ -638,10 +630,6 @@ div.lecture-row {
 
 	.lecture-row {
 		grid-template-columns: minmax(0, 1fr) 4rem 6rem;
-	}
-
-	.lecture-row:has(> .btn) {
-		grid-template-columns: minmax(0, 1fr) 4rem 6rem auto;
 	}
 
 	.lecture-tags:empty {
