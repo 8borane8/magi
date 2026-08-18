@@ -10,8 +10,8 @@ type WhisperXResult = {
 function whisperxCommand(args: string[]): Deno.Command {
 	const options: Deno.CommandOptions = {
 		args,
-		stdout: "piped",
-		stderr: "piped",
+		stdout: "inherit",
+		stderr: "inherit",
 	};
 
 	if (Deno.build.os === "windows" && !/\.(exe|cmd|bat)$/i.test(config.whisperxBin)) {
@@ -40,9 +40,9 @@ export async function transcribe(lectureId: string): Promise<void> {
 		"--no_align",
 	];
 
-	const { code, stderr } = await whisperxCommand(args).output();
-	if (code !== 0) {
-		throw new Error(`whisperx_exit_${code}: ${new TextDecoder().decode(stderr)}`);
+	const status = await whisperxCommand(args).spawn().status;
+	if (!status.success) {
+		throw new Error(`whisperx_exit_${status.code}`);
 	}
 
 	const parsed = JSON.parse(await Deno.readTextFile(join(dir, "record.json"))) as WhisperXResult;

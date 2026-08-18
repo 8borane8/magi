@@ -98,6 +98,15 @@ export default new Router()
 			data: req.data.lecture.toJSON(),
 		});
 	})
+	.get("/:lectureId/wait", async (req, res) => {
+		await recording.whenProcessed(req.data.lecture.id);
+		await req.data.lecture.reload({ include: withRelations });
+
+		return res.json({
+			success: true as const,
+			data: req.data.lecture.toJSON(),
+		});
+	})
 	.patch(
 		"/:lectureId",
 		async (req, res) => {

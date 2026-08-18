@@ -1,38 +1,23 @@
 import { Moon, Sun } from "lucide-preact";
-import { useSignal } from "@preact/signals";
-import { useEffect } from "preact/hooks";
 
 import { THEME_KEY } from "../components/theme-init.tsx";
 
-function readDark(): boolean {
-	const stored = localStorage.getItem(THEME_KEY);
-	if (stored === "dark") return true;
-	if (stored === "light") return false;
-	return matchMedia("(prefers-color-scheme: dark)").matches;
-}
-
 export default function ThemeToggle() {
-	const dark = useSignal(false);
-
-	useEffect(() => {
-		dark.value = readDark();
-	}, []);
-
 	function onToggle() {
-		dark.value = !dark.value;
-		const theme = dark.value ? "dark" : "light";
-		localStorage.setItem(THEME_KEY, theme);
-		document.documentElement.dataset.theme = theme;
+		const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+		localStorage.setItem(THEME_KEY, next);
+		document.documentElement.dataset.theme = next;
 	}
 
 	return (
 		<button
 			type="button"
-			class="btn btn-icon"
-			aria-label={dark.value ? "Passer au thème clair" : "Passer au thème sombre"}
+			class="btn btn-icon theme-toggle"
+			aria-label="Changer le thème"
 			onClick={onToggle}
 		>
-			{dark.value ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+			<Sun class="icon-sun" size={16} aria-hidden="true" />
+			<Moon class="icon-moon" size={16} aria-hidden="true" />
 		</button>
 	);
 }

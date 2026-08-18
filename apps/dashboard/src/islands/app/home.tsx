@@ -5,7 +5,7 @@ import { useEffect, useRef } from "preact/hooks";
 
 import HomeFilters, { EMPTY_HOME_FILTERS, type HomeFilters as Filters } from "../../components/home-filters.tsx";
 import HomeSubjectsNav from "../../components/home-subjects-nav.tsx";
-import { createClient, nodeUrl } from "../../client.ts";
+import { createClient, nodeUrl, waitLecture } from "../../client.ts";
 import { recordSession } from "../../utils/record-session.ts";
 import { formatDuration, lectureTitle, STATUS_LABEL } from "../../utils/lecture-format.ts";
 import { readHomeQueryFromBrowser, writeHomeQuery } from "../../utils/home-query.ts";
@@ -181,6 +181,24 @@ export default function Home({
 			error.value = "Impossible de charger le catalogue.";
 		}
 	}
+
+	const treatingIds = lectures.value
+		.filter((lecture) => lecture.status === SessionStatus.PROCESSING)
+		.map((lecture) => lecture.id)
+		.join(",");
+
+	useEffect(() => {
+		if (!treatingIds) return;
+
+		const ac = new AbortController();
+		void Promise.all(
+			treatingIds.split(",").map((id) => waitLecture(id, ac.signal).catch(() => {})),
+		).then(() => {
+			if (!ac.signal.aborted) void load();
+		});
+
+		return () => ac.abort();
+	}, [treatingIds]);
 
 	useEffect(() => {
 		let wasBusy = recordSession.status !== "idle";

@@ -46,3 +46,11 @@ export function createClient(baseUrl?: string): MagiClient {
 
 	return new HttpClient<AppRouter>({ baseUrl: url });
 }
+
+export async function waitLecture(lectureId: string, signal?: AbortSignal): Promise<void> {
+	const url = nodeUrl();
+	if (!url) throw new Error("No node URL found.");
+
+	const response = await fetch(`${url}/lectures/${encodeURIComponent(lectureId)}/wait`, { signal });
+	if (!response.ok) throw new Error("wait_failed");
+}

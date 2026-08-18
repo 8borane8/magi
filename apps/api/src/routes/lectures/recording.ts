@@ -178,7 +178,7 @@ export default new Router<{ lecture: Lecture }>()
 			});
 		}
 
-		queueMicrotask(() => void processLecture(lecture.id));
+		recording.runProcess(lecture.id, () => processLecture(lecture.id));
 		return res.json({ success: true });
 	})
 	.post("/:lectureId/retry", async (req, res) => {
@@ -199,6 +199,6 @@ export default new Router<{ lecture: Lecture }>()
 			});
 		}
 
-		queueMicrotask(() => void processLecture(lecture.id));
+		recording.runProcess(lecture.id, () => processLecture(lecture.id));
 		return res.json({ success: true });
 	});

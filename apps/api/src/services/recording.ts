@@ -6,6 +6,7 @@ import * as storage from "@/services/storage.ts";
 
 const queues = new Map<string, Promise<unknown>>();
 const staleTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const jobs = new Map<string, Promise<void>>();
 
 export function withLectureLock<T>(lectureId: string, task: () => Promise<T>): Promise<T> {
 	const previous = queues.get(lectureId) || Promise.resolve();
@@ -18,6 +19,19 @@ export function withLectureLock<T>(lectureId: string, task: () => Promise<T>): P
 	});
 
 	return result;
+}
+
+export function runProcess(lectureId: string, task: () => Promise<void>): void {
+	if (jobs.has(lectureId)) return;
+	const run = task();
+	jobs.set(lectureId, run);
+	void run.finally(() => {
+		if (jobs.get(lectureId) === run) jobs.delete(lectureId);
+	});
+}
+
+export function whenProcessed(lectureId: string): Promise<void> {
+	return jobs.get(lectureId) || Promise.resolve();
 }
 
 export function clearStalePause(lectureId: string): void {
