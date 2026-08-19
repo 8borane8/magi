@@ -132,8 +132,19 @@ export default function LectureChat({
 					body,
 				},
 			);
-			const result = await response.json() as { success?: boolean; data?: ChatMessageData[] };
-			if (!result.success || !Array.isArray(result.data)) throw new Error("chat_send_failed");
+			const result = await response.json() as {
+				success?: boolean;
+				data?: ChatMessageData[];
+				error?: string;
+			};
+			if (!result.success || !Array.isArray(result.data)) {
+				if (result.error === "context_exceeded") {
+					error.value =
+						"Le contexte du modèle est trop petit pour ce cours. Augmente OLLAMA_CONTEXT_LENGTH ou raccourcis l'historique.";
+					return;
+				}
+				throw new Error("chat_send_failed");
+			}
 
 			for (const item of attached) URL.revokeObjectURL(item.url);
 			draft.value = "";

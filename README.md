@@ -82,18 +82,20 @@ Ollama et WhisperX sont inclus dans le nœud. On ne les lance jamais à part.
 
 Copiez `.env.example` vers `.env` à la racine, puis ajustez au besoin.
 
-| Variable                | Défaut Docker | Rôle                                                      |
-| ----------------------- | ------------- | --------------------------------------------------------- |
-| `DASHBOARD_PORT`        | `5000`        | Port du dashboard                                         |
-| `API_PORT`              | `5050`        | Port du nœud                                              |
-| `OLLAMA_CHAT_MODEL`     | `llama3.2`    | Classement, fiche, chat texte                             |
-| `OLLAMA_VISION_MODEL`   | `llava`       | Chat avec images                                          |
-| `OLLAMA_NUM_CTX`        | `131072`      | Fenêtre de contexte Ollama (baisser si la VRAM manque)    |
-| `WHISPERX_MODEL`        | `large-v2`    | Modèle de transcription                                   |
-| `WHISPERX_LANGUAGE`     | `fr`          | Langue                                                    |
-| `WHISPERX_DEVICE`       | `cpu`         | `cpu` par défaut, `cuda` avec l'overlay GPU               |
-| `WHISPERX_COMPUTE_TYPE` | `int8`        | `int8` (CPU) ou `float16` (GPU)                           |
-| `HF_TOKEN`              | (vide)        | Jeton Hugging Face (lecture) pour la diarisation pyannote |
+| Variable                 | Défaut Docker | Rôle                                                      |
+| ------------------------ | ------------- | --------------------------------------------------------- |
+| `DASHBOARD_PORT`         | `5000`        | Port du dashboard                                         |
+| `API_PORT`               | `5050`        | Port du nœud                                              |
+| `OLLAMA_CHAT_MODEL`      | `llama3.2`    | Classement, fiche, chat texte                             |
+| `OLLAMA_VISION_MODEL`    | `llava`       | Chat avec images                                          |
+| `OLLAMA_CONTEXT_LENGTH`  | `131072`      | Fenêtre de contexte Ollama (baisser si la VRAM manque)    |
+| `OLLAMA_FLASH_ATTENTION` | `1`           | Flash attention (requis pour quantifier le cache KV)      |
+| `OLLAMA_KV_CACHE_TYPE`   | `q8_0`        | Cache KV 8 bits, environ la moitié de `f16`               |
+| `WHISPERX_MODEL`         | `large-v2`    | Modèle de transcription                                   |
+| `WHISPERX_LANGUAGE`      | `fr`          | Langue                                                    |
+| `WHISPERX_DEVICE`        | `cpu`         | `cpu` par défaut, `cuda` avec l'overlay GPU               |
+| `WHISPERX_COMPUTE_TYPE`  | `int8`        | `int8` (CPU) ou `float16` (GPU)                           |
+| `HF_TOKEN`               | (vide)        | Jeton Hugging Face (lecture) pour la diarisation pyannote |
 
 Les cours, la base SQLite et l'audio sont dans le volume Docker `magi-data`. En développement Deno : `apps/api/data/`
 (non versionné).
@@ -114,7 +116,8 @@ puis classement Ollama, puis fiche. Un cours en `failed` peut être relancé dep
 ## Développement sans Docker
 
 Prérequis : [Deno](https://deno.com/) 2.x, [WhisperX](https://github.com/m-bain/whisperX) dans le `PATH`,
-[Ollama](https://ollama.com/) en local avec les modèles `llama3.2` et `llava`, et `HF_TOKEN` pour la diarisation.
+[Ollama](https://ollama.com/) en local avec les modèles `llama3.2` et `llava`, et `HF_TOKEN` pour la diarisation. Réglez
+`OLLAMA_CONTEXT_LENGTH` (et éventuellement `OLLAMA_KV_CACHE_TYPE=q8_0`) sur le process Ollama, pas dans `apps/api/.env`.
 
 ```bash
 cd apps/api

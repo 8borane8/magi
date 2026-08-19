@@ -18,7 +18,6 @@ export const config = {
 	ollamaUrl: Deno.env.get("OLLAMA_URL") || "http://127.0.0.1:11434",
 	ollamaChatModel: Deno.env.get("OLLAMA_CHAT_MODEL") || "llama3.2",
 	ollamaVisionModel: Deno.env.get("OLLAMA_VISION_MODEL") || "llava",
-	ollamaNumCtx: Number(Deno.env.get("OLLAMA_NUM_CTX")) || 131072,
 
 	whisperxBin: Deno.env.get("WHISPERX_BIN") || "whisperx",
 	whisperxModel: Deno.env.get("WHISPERX_MODEL") || "large-v2",

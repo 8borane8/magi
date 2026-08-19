@@ -87,6 +87,12 @@ export default new Router<{ lecture: Lecture }>()
 						// Already gone.
 					}
 				}
+				if (error instanceof Error && error.message === "context_exceeded") {
+					return res.status(413).json({
+						success: false as const,
+						error: "context_exceeded",
+					});
+				}
 				return res.status(502).json({
 					success: false as const,
 					error: "ai_unavailable",

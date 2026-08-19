@@ -17,6 +17,29 @@ type OllamaChatResponse = {
 	error?: string;
 };
 
+function isContextOverflow(message: string): boolean {
+	const lower = message.toLowerCase();
+	return lower.includes("context length") ||
+		lower.includes("exceeds context") ||
+		lower.includes("context window") ||
+		lower.includes("prompt too long") ||
+		lower.includes("too many tokens");
+}
+
+function contextOrRaw(message: string): Error {
+	return new Error(isContextOverflow(message) ? "context_exceeded" : message);
+}
+
+async function readErrorBody(response: Response): Promise<string> {
+	try {
+		const data = await response.json() as OllamaChatResponse;
+		if (data.error) return data.error;
+	} catch {
+		// Body is not JSON.
+	}
+	return `ollama_http_${response.status}`;
+}
+
 export async function chat(messages: OllamaMessage[], options: ChatOptions = {}): Promise<string> {
 	const model = options.model || config.ollamaChatModel;
 
@@ -31,21 +54,18 @@ export async function chat(messages: OllamaMessage[], options: ChatOptions = {})
 				model,
 				messages,
 				stream: false,
-				options: {
-					num_ctx: config.ollamaNumCtx,
-					...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
-				},
 				...(options.format ? { format: options.format } : {}),
+				...(options.temperature !== undefined ? { options: { temperature: options.temperature } } : {}),
 			}),
 			signal: controller.signal,
 		});
 
 		if (!response.ok) {
-			throw new Error(`ollama_http_${response.status}`);
+			throw contextOrRaw(await readErrorBody(response));
 		}
 
 		const data = await response.json() as OllamaChatResponse;
-		if (data.error) throw new Error(data.error);
+		if (data.error) throw contextOrRaw(data.error);
 		return data.message?.content?.trim() || "";
 	} catch (error) {
 		if (error instanceof Error && error.name === "AbortError") {
