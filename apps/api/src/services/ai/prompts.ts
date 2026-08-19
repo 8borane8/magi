@@ -4,6 +4,7 @@ Réponds uniquement ce JSON, clés exactes title, subject, tags :
 {"title":"...","subject":"...","tags":["..."]}
 
 title : moins de 80 caractères, ce que le prof a traité dans cette séance.
+Si la transcription porte des labels [SPEAKER_xx], base-toi surtout sur le locuteur principal (le prof), pas sur les apartés.
 subject : une matière, vocabulaire du prof ou du catalogue (nom identique si ça colle).
 tags : 2 à 6 thèmes en français, sans doublon. Réemploie le catalogue si ça colle, sinon un nom court.
 Pas de quasi-doublon (pas Analyse et analyse mathématique).`;
@@ -12,6 +13,8 @@ export const PROMPT_FICHE =
 	`Tu rédiges la fiche du professeur, en français, à partir de la transcription seule. Toutes les disciplines.
 
 Tu n'es pas un résumé internet. Tu te mets dans le corps du prof : son ordre, ses notations, ses exemples, ses apartés. Fidèle, sans déformer, sans inventer, sans combler les trous. Un passage inaudible ou flou s'omet.
+
+La transcription peut porter des labels [SPEAKER_xx]. Distingue le prof des questions ou interventions d'autres locuteurs. N'invente pas de noms.
 
 Canevas identique pour tous les cours. Omets une section si elle n'a rien à dire.
 

@@ -23,12 +23,13 @@ de l'électricité, et la bibliothèque de cours reste un dossier de fichiers su
 
 - **Enregistrement** depuis le navigateur (pause, reprise, streaming par fragments). Pas d'application à installer.
 - **Bibliothèque** : recherche, filtres, matières, étiquettes, lecteur audio.
-- **Transcription** locale via [WhisperX](https://github.com/m-bain/whisperX) dès l'arrêt de l'enregistrement.
+- **Transcription** locale via [WhisperX](https://github.com/m-bain/whisperX) dès l'arrêt de l'enregistrement, avec
+  diarisation (qui parle).
 - **Classement** via [Ollama](https://ollama.com/) : titre, matière, étiquettes proposés automatiquement (modifiables).
 - **Fiche de cours** structurée (définitions, théorèmes, propositions, démonstrations).
 - **Chat prof** sur un cours, y compris avec des images.
 
-Pas encore : quiz, diarisation, banque de théorèmes, carte mentale.
+Pas encore : quiz, banque de théorèmes, carte mentale.
 
 ## Prérequis
 
@@ -46,6 +47,11 @@ docker compose --profile all up --build
 
 Le premier lancement télécharge l'image PyTorch, WhisperX, Ollama et les modèles (`llama3.2`, `llava`). Comptez
 plusieurs gigaoctets. Après une modification du code, reconstruisez les images (`--build`).
+
+La diarisation WhisperX utilise le modèle
+[pyannote speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1). Créez un
+jeton Hugging Face en lecture, acceptez les conditions du modèle, puis renseignez `HF_TOKEN` dans `.env`. Le modèle est
+téléchargé une fois ; l'audio reste local.
 
 Puis ouvrez [http://localhost:5000](http://localhost:5000). Avec le profil `all`, le dashboard est déjà branché sur
 `http://localhost:5050`. Enregistrez un cours.
@@ -76,16 +82,18 @@ Ollama et WhisperX sont inclus dans le nœud. On ne les lance jamais à part.
 
 Copiez `.env.example` vers `.env` à la racine, puis ajustez au besoin.
 
-| Variable                | Défaut Docker | Rôle                                        |
-| ----------------------- | ------------- | ------------------------------------------- |
-| `DASHBOARD_PORT`        | `5000`        | Port du dashboard                           |
-| `API_PORT`              | `5050`        | Port du nœud                                |
-| `OLLAMA_CHAT_MODEL`     | `llama3.2`    | Classement, fiche, chat texte               |
-| `OLLAMA_VISION_MODEL`   | `llava`       | Chat avec images                            |
-| `WHISPERX_MODEL`        | `large-v2`    | Modèle de transcription                     |
-| `WHISPERX_LANGUAGE`     | `fr`          | Langue                                      |
-| `WHISPERX_DEVICE`       | `cpu`         | `cpu` par défaut, `cuda` avec l'overlay GPU |
-| `WHISPERX_COMPUTE_TYPE` | `int8`        | `int8` (CPU) ou `float16` (GPU)             |
+| Variable                | Défaut Docker | Rôle                                                      |
+| ----------------------- | ------------- | --------------------------------------------------------- |
+| `DASHBOARD_PORT`        | `5000`        | Port du dashboard                                         |
+| `API_PORT`              | `5050`        | Port du nœud                                              |
+| `OLLAMA_CHAT_MODEL`     | `llama3.2`    | Classement, fiche, chat texte                             |
+| `OLLAMA_VISION_MODEL`   | `llava`       | Chat avec images                                          |
+| `OLLAMA_NUM_CTX`        | `131072`      | Fenêtre de contexte Ollama (baisser si la VRAM manque)    |
+| `WHISPERX_MODEL`        | `large-v2`    | Modèle de transcription                                   |
+| `WHISPERX_LANGUAGE`     | `fr`          | Langue                                                    |
+| `WHISPERX_DEVICE`       | `cpu`         | `cpu` par défaut, `cuda` avec l'overlay GPU               |
+| `WHISPERX_COMPUTE_TYPE` | `int8`        | `int8` (CPU) ou `float16` (GPU)                           |
+| `HF_TOKEN`              | (vide)        | Jeton Hugging Face (lecture) pour la diarisation pyannote |
 
 Les cours, la base SQLite et l'audio sont dans le volume Docker `magi-data`. En développement Deno : `apps/api/data/`
 (non versionné).
@@ -106,7 +114,7 @@ puis classement Ollama, puis fiche. Un cours en `failed` peut être relancé dep
 ## Développement sans Docker
 
 Prérequis : [Deno](https://deno.com/) 2.x, [WhisperX](https://github.com/m-bain/whisperX) dans le `PATH`,
-[Ollama](https://ollama.com/) en local avec les modèles `llama3.2` et `llava`.
+[Ollama](https://ollama.com/) en local avec les modèles `llama3.2` et `llava`, et `HF_TOKEN` pour la diarisation.
 
 ```bash
 cd apps/api

@@ -31,8 +31,11 @@ export async function chat(messages: OllamaMessage[], options: ChatOptions = {})
 				model,
 				messages,
 				stream: false,
+				options: {
+					num_ctx: config.ollamaNumCtx,
+					...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+				},
 				...(options.format ? { format: options.format } : {}),
-				...(options.temperature !== undefined ? { options: { temperature: options.temperature } } : {}),
 			}),
 			signal: controller.signal,
 		});

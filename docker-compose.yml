@@ -30,10 +30,12 @@ services:
             OLLAMA_URL: http://ollama:11434
             OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-llama3.2}
             OLLAMA_VISION_MODEL: ${OLLAMA_VISION_MODEL:-llava}
+            OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-131072}
             WHISPERX_MODEL: ${WHISPERX_MODEL:-large-v2}
             WHISPERX_LANGUAGE: ${WHISPERX_LANGUAGE:-fr}
             WHISPERX_DEVICE: ${WHISPERX_DEVICE:-cpu}
             WHISPERX_COMPUTE_TYPE: ${WHISPERX_COMPUTE_TYPE:-int8}
+            HF_TOKEN: ${HF_TOKEN:-}
         volumes:
             - magi-data:/data
             - whisperx-cache:/root/.cache
