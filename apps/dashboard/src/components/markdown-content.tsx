@@ -1,4 +1,4 @@
-import mermaid from "mermaid";
+import mermaid from "https://esm.sh/mermaid@11.12.0?bundle";
 import { useEffect, useMemo, useRef } from "preact/hooks";
 
 import { renderMarkdown } from "../utils/markdown.ts";

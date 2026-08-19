@@ -11,7 +11,6 @@ const app = new Slick(import.meta.dirname!, {
 		"katex",
 		"highlight.js",
 		"marked",
-		"mermaid",
 	],
 });
 
