@@ -53,9 +53,8 @@ export function createClient(baseUrl?: string): MagiClient {
 }
 
 export type ProcessStreamEvent =
-	| { type: "init"; stage: string; preview: string }
+	| { type: "init"; stage: string }
 	| { type: "stage"; stage: string }
-	| { type: "delta"; text: string }
 	| { type: "done" }
 	| { type: "error"; error: string };
 

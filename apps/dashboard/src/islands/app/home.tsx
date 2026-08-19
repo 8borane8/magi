@@ -27,7 +27,6 @@ type LectureRow = {
 };
 type ProcessView = {
 	stage: string;
-	preview: string;
 	stageAt: number;
 };
 
@@ -118,22 +117,12 @@ function applyProcessEvent(
 	id: string,
 	event: ProcessStreamEvent,
 ): Record<string, ProcessView> | null {
-	const prev = current[id] || { stage: "transcribe", preview: "", stageAt: 0 };
+	const prev = current[id] || { stage: "transcribe", stageAt: 0 };
 	if (event.type === "init") {
-		return { ...current, [id]: { stage: event.stage, preview: event.preview, stageAt: prev.stageAt } };
+		return { ...current, [id]: { stage: event.stage, stageAt: prev.stageAt } };
 	}
 	if (event.type === "stage") {
-		return {
-			...current,
-			[id]: {
-				stage: event.stage,
-				preview: event.stage === "fiche" ? prev.preview : "",
-				stageAt: Date.now(),
-			},
-		};
-	}
-	if (event.type === "delta") {
-		return { ...current, [id]: { ...prev, preview: (prev.preview + event.text).slice(-4000) } };
+		return { ...current, [id]: { stage: event.stage, stageAt: Date.now() } };
 	}
 	return null;
 }
@@ -458,7 +447,6 @@ export default function Home({
 							{" · "}
 							{formatDuration(Math.max(0, Date.now() - startedAt))}
 						</p>
-						{progress?.preview ? <pre>{progress.preview}</pre> : null}
 					</div>
 				</div>
 			);

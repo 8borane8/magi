@@ -44,7 +44,7 @@ async function processLecture(lectureId: string): Promise<void> {
 		await markStage(lecture, "classify");
 		await ai.classify(lectureId);
 		await markStage(lecture, "fiche");
-		await ai.writeFiche(lectureId, (text) => processEvents.appendDelta(lectureId, text));
+		await ai.writeFiche(lectureId);
 		await lecture.update({ status: SessionStatus.COMPLETED, processStage: null });
 		processEvents.endProcess(lectureId);
 	} catch (error) {

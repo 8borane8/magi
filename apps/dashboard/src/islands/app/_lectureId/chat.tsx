@@ -61,6 +61,7 @@ export default function LectureChat({
 	const sendStartedAt = useSignal(0);
 	const tick = useSignal(0);
 	const dropping = useSignal(false);
+	const think = useSignal(false);
 	const error = useSignal<string | null>(null);
 	const listRef = useRef<HTMLOListElement>(null);
 	const dialogRef = useRef<HTMLDialogElement>(null);
@@ -136,6 +137,12 @@ export default function LectureChat({
 
 	useEffect(() => {
 		let alive = true;
+
+		try {
+			think.value = localStorage.getItem("magi-chat-think") === "1";
+		} catch {
+			// Storage may be unavailable.
+		}
 
 		if (Array.isArray(initialMessages)) {
 			pending.value = false;
@@ -247,6 +254,7 @@ export default function LectureChat({
 
 			const body = new FormData();
 			body.append("content", content);
+			body.append("think", think.value ? "true" : "false");
 			for (const item of attached) body.append("files", item.file);
 
 			const response = await fetch(
@@ -375,7 +383,7 @@ export default function LectureChat({
 					))}
 					{sending.value && (
 						<li data-role="assistant" data-pending="">
-							<p>{streamText.value || "Le prof écrit..."}</p>
+							<p>{streamText.value || (think.value ? "Le prof réfléchit..." : "Le prof écrit...")}</p>
 							<time>{formatDuration(Math.max(0, Date.now() - sendStartedAt.value))}</time>
 						</li>
 					)}
@@ -441,6 +449,23 @@ export default function LectureChat({
 						>
 							<Paperclip size={16} aria-hidden="true" />
 						</button>
+						<label>
+							<input
+								type="checkbox"
+								checked={think.value}
+								disabled={sending.value}
+								onChange={(event) => {
+									const on = (event.currentTarget as HTMLInputElement).checked;
+									think.value = on;
+									try {
+										localStorage.setItem("magi-chat-think", on ? "1" : "0");
+									} catch {
+										// Storage may be unavailable.
+									}
+								}}
+							/>
+							Réflexion
+						</label>
 					</li>
 					<li>
 						<button

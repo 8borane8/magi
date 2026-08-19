@@ -9,10 +9,7 @@ function unwrapMarkdown(text: string): string {
 	return text.trim().replace(/^```(?:markdown|md)?\s*/i, "").replace(/\s*```$/, "").trim();
 }
 
-export async function writeFiche(
-	lectureId: string,
-	onDelta?: (text: string) => void,
-): Promise<void> {
+export async function writeFiche(lectureId: string): Promise<void> {
 	const lecture = await Lecture.findByPk(lectureId);
 	if (!lecture) throw new Error("lecture_not_found");
 
@@ -32,7 +29,6 @@ export async function writeFiche(
 		)
 	) {
 		raw += piece;
-		onDelta?.(piece);
 	}
 
 	const markdown = unwrapMarkdown(raw);

@@ -11,6 +11,7 @@ import { PROMPT_CHAT } from "./prompts.ts";
 type ChatReplyInput = {
 	lecture: Lecture;
 	history: Array<{ role: ChatRole; content: string; attachments?: ChatAttachment[] | null }>;
+	think?: boolean;
 };
 
 function encodeBase64(bytes: Uint8Array): string {
@@ -96,5 +97,5 @@ async function buildMessages(input: ChatReplyInput): Promise<{
 
 export async function* replyStream(input: ChatReplyInput): AsyncGenerator<string> {
 	const { messages, model } = await buildMessages(input);
-	yield* chatStream(messages, { model, temperature: 0.5 });
+	yield* chatStream(messages, { model, temperature: 0.5, think: input.think });
 }

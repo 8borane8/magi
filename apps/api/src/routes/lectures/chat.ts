@@ -33,12 +33,14 @@ async function generateReply(
 	user: ChatMessage,
 	previous: ChatMessage[],
 	attachments: ChatAttachment[],
+	think: boolean,
 ): Promise<void> {
 	let answer = "";
 	try {
 		for await (
 			const piece of replyStream({
 				lecture,
+				think,
 				history: [...previous, user].map((item) => ({
 					role: item.role,
 					content: item.content,
@@ -100,6 +102,7 @@ export default new Router<{ lecture: Lecture }>()
 			const lecture = req.data.lecture;
 			const content = (req.body.content || "").trim();
 			const files = [req.body.files || []].flat();
+			const think = req.body.think === true || req.body.think === "true";
 
 			if (!content && files.length === 0) {
 				return res.status(400).json({
@@ -159,7 +162,7 @@ export default new Router<{ lecture: Lecture }>()
 				});
 			}
 
-			void generateReply(lecture, user, previous, attachments);
+			void generateReply(lecture, user, previous, attachments, think);
 
 			return res.json({
 				success: true as const,
@@ -171,6 +174,7 @@ export default new Router<{ lecture: Lecture }>()
 			body: z.object({
 				content: z.optional(z.string().max(4000)),
 				files: z.optional(z.union([chatFile, z.array(chatFile).max(config.maxChatFiles)])),
+				think: z.optional(z.union([z.boolean(), z.enum(["true", "false"])])),
 			}),
 		},
 	)

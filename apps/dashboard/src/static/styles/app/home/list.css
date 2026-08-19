@@ -111,25 +111,6 @@ div.lecture-row {
 	font-variant-numeric: tabular-nums;
 }
 
-.lecture-stream > pre {
-	max-height: 8rem;
-
-	color: var(--color-text-muted);
-	font-family: var(--font-sans);
-	font-size: var(--text-sm);
-	line-height: 1.45;
-
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
-
-	margin: 0;
-	padding: var(--space-2) var(--space-3);
-
-	overflow: auto;
-	background: var(--color-bg-muted);
-	border-radius: var(--radius-sm);
-}
-
 .lecture-tags {
 	display: flex;
 	flex-direction: row;

@@ -2,19 +2,16 @@ import type { ProcessStage } from "@magi/shared/types/session";
 
 export type ProcessEvent =
 	| { type: "idle" }
-	| { type: "init"; stage: ProcessStage; preview: string }
+	| { type: "init"; stage: ProcessStage }
 	| { type: "stage"; stage: ProcessStage }
-	| { type: "delta"; text: string }
 	| { type: "done" }
 	| { type: "error"; error: string };
 
 type Hub = {
 	stage: ProcessStage;
-	preview: string;
 	listeners: Set<(event: ProcessEvent) => void>;
 };
 
-const PREVIEW_MAX = 4000;
 const hubs = new Map<string, Hub>();
 
 function emit(hub: Hub, event: ProcessEvent): void {
@@ -24,7 +21,6 @@ function emit(hub: Hub, event: ProcessEvent): void {
 export function startProcess(lectureId: string, stage: ProcessStage = "transcribe"): void {
 	hubs.set(lectureId, {
 		stage,
-		preview: "",
 		listeners: new Set(),
 	});
 }
@@ -33,15 +29,7 @@ export function setStage(lectureId: string, stage: ProcessStage): void {
 	const hub = hubs.get(lectureId);
 	if (!hub || hub.stage === stage) return;
 	hub.stage = stage;
-	if (stage !== "fiche") hub.preview = "";
 	emit(hub, { type: "stage", stage });
-}
-
-export function appendDelta(lectureId: string, text: string): void {
-	const hub = hubs.get(lectureId);
-	if (!hub) return;
-	hub.preview = (hub.preview + text).slice(-PREVIEW_MAX);
-	emit(hub, { type: "delta", text });
 }
 
 export function endProcess(lectureId: string, error?: string): void {
@@ -58,9 +46,7 @@ export function followProcess(
 ): Promise<void> {
 	const hub = hubs.get(lectureId);
 	if (!hub) {
-		if (fallbackStage) {
-			onEvent({ type: "init", stage: fallbackStage, preview: "" });
-		}
+		if (fallbackStage) onEvent({ type: "init", stage: fallbackStage });
 		onEvent({ type: "idle" });
 		return Promise.resolve();
 	}
@@ -75,7 +61,7 @@ export function followProcess(
 			signal.removeEventListener("abort", stop);
 			resolve();
 		};
-		onEvent({ type: "init", stage: hub.stage, preview: hub.preview });
+		onEvent({ type: "init", stage: hub.stage });
 		hub.listeners.add(listener);
 		if (signal.aborted) stop();
 		else signal.addEventListener("abort", stop);
