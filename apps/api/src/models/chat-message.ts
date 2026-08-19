@@ -8,6 +8,7 @@ import {
 } from "@sequelize/core";
 import { Attribute, BelongsTo, Default, NotNull, PrimaryKey } from "@sequelize/core/decorators-legacy";
 
+import type { ChatFileKind } from "@magi/shared/types/chat-file";
 import { Lecture } from "./lecture.ts";
 
 export enum ChatRole {
@@ -16,8 +17,10 @@ export enum ChatRole {
 }
 
 export type ChatAttachment = {
-	kind: "image";
+	kind: ChatFileKind;
 	path: string;
+	name?: string;
+	text?: string;
 };
 
 export class ChatMessage extends Model<InferAttributes<ChatMessage>, InferCreationAttributes<ChatMessage>> {

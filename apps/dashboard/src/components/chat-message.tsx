@@ -1,8 +1,9 @@
 import MarkdownContent from "./markdown-content.tsx";
 
 export type ChatAttachmentData = {
-	kind: "image";
+	kind: "image" | "pdf" | "text";
 	path: string;
+	name?: string;
 };
 
 export type ChatMessageData = {
@@ -19,18 +20,30 @@ export default function ChatMessage({
 	message: ChatMessageData;
 	srcPrefix: string;
 }) {
-	const images = (message.attachments || []).filter((item) => item.kind === "image");
+	const attachments = message.attachments || [];
 
 	return (
 		<li data-role={message.role}>
-			{images.length > 0 && (
+			{attachments.length > 0 && (
 				<ul>
-					{images.map((item) => (
-						<li key={item.path}>
-							<img
-								src={`${srcPrefix}/${encodeURIComponent(item.path)}`}
-								alt="Image jointe"
-							/>
+					{attachments.map((item) => (
+						<li key={item.path} data-kind={item.kind}>
+							{item.kind === "image"
+								? (
+									<img
+										src={`${srcPrefix}/${encodeURIComponent(item.path)}`}
+										alt={item.name || "Image jointe"}
+									/>
+								)
+								: (
+									<a
+										href={`${srcPrefix}/${encodeURIComponent(item.path)}`}
+										target="_blank"
+										rel="noreferrer"
+									>
+										{item.name || item.path}
+									</a>
+								)}
 						</li>
 					))}
 				</ul>

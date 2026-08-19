@@ -12,9 +12,8 @@ export default {
 	title: (req) => `Prof | ${lectureTitle(req.data.lecture)} | Magi`,
 
 	styles: [
-		"/styles/app/_lectureId/fiche.css",
+		"/styles/markdown/index.css",
 		"/styles/app/_lectureId/chat.css",
-		"/styles/app/_lectureId/dialog.css",
 	],
 	scripts: [],
 

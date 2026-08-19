@@ -1,0 +1,201 @@
+@import url("./filters.css");
+@import url("./list.css");
+@import url("./mobile.css");
+
+#home {
+	width: 100%;
+	min-height: 0;
+
+	display: grid;
+	grid-template-columns: 16rem minmax(0, 1fr);
+	grid-template-rows: auto auto minmax(0, 1fr);
+	grid-template-areas:
+		"toolbar toolbar"
+		"error error"
+		"subjects list";
+	flex: 1 1 auto;
+
+	overflow: hidden;
+}
+
+#home > form {
+	grid-area: toolbar;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	flex-shrink: 0;
+
+	position: relative;
+
+	background: var(--color-bg-elevated);
+}
+
+#home > form > div:first-child {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: center;
+	flex-wrap: nowrap;
+	gap: var(--space-2);
+
+	padding: var(--space-3) var(--space-6);
+
+	border-bottom: 1px solid var(--color-border);
+}
+
+#home > form > div:first-child > .btn-primary {
+	height: 2.25rem;
+
+	padding: 0 var(--space-3);
+}
+
+#home > form > div:first-child > .btn-primary > span {
+	display: inline;
+}
+
+#root[data-recording] #home > form > div:first-child > .btn-primary {
+	display: none;
+}
+
+#home > form > div:first-child > .field-search {
+	width: auto;
+	min-width: 0;
+
+	flex: 1 1 auto;
+}
+
+#home > form > div:first-child > .field-search > input {
+	width: 100%;
+}
+
+#home > form > div:first-child > .btn-icon {
+	flex-shrink: 0;
+}
+
+#home > form > div:first-child > button[aria-controls="home-filters"] {
+	position: relative;
+}
+
+#home > form > div:first-child > button[aria-controls="home-filters"] > span {
+	width: 1rem;
+	height: 1rem;
+
+	color: var(--color-on-accent);
+	font-size: 0.625rem;
+	font-weight: 600;
+	line-height: 1;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: nowrap;
+
+	position: absolute;
+	top: -0.2rem;
+	right: -0.2rem;
+	z-index: 1;
+
+	background: var(--color-accent);
+	border-radius: 50%;
+}
+
+#home > .error {
+	grid-area: error;
+
+	padding: var(--space-3) var(--space-6);
+}
+
+#home > form > div:first-child > button:first-child {
+	display: none;
+}
+
+#home > button {
+	display: none;
+}
+
+#home-subjects {
+	grid-area: subjects;
+	width: 16rem;
+	min-height: 0;
+
+	flex-shrink: 0;
+
+	padding: var(--space-4) 0;
+
+	overflow: auto;
+	border-right: 1px solid var(--color-border);
+}
+
+#home-subjects > h2 {
+	color: var(--color-text-muted);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+
+	padding: 0 var(--space-5) var(--space-2);
+}
+
+#home-subjects > ol > li > button {
+	width: 100%;
+
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: nowrap;
+	gap: var(--space-2);
+
+	padding: var(--space-2) var(--space-5);
+
+	cursor: pointer;
+}
+
+#home-subjects > ol > li > button > span:first-child {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: center;
+	flex-wrap: nowrap;
+	gap: var(--space-2);
+}
+
+#home-subjects > ol > li > button > span:last-child {
+	color: var(--color-text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+#home-subjects > ol > li > button:hover,
+#home-subjects > ol > li > button[aria-current="true"] {
+	background: var(--color-accent-soft);
+}
+
+#home > article {
+	grid-area: list;
+	min-width: 0;
+	min-height: 0;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: var(--space-5);
+
+	padding: var(--space-4) var(--space-5);
+
+	overflow: auto;
+}
+
+#home > article > p {
+	color: var(--color-text-muted);
+}

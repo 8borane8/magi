@@ -5,7 +5,7 @@ import { useEffect, useRef } from "preact/hooks";
 
 import HomeFilters, { EMPTY_HOME_FILTERS, type HomeFilters as Filters } from "../../components/home-filters.tsx";
 import HomeSubjectsNav from "../../components/home-subjects-nav.tsx";
-import { createClient, nodeUrl, waitLecture } from "../../client.ts";
+import { createClient, nodeUrl, type ProcessStreamEvent, watchLectureProcess } from "../../client.ts";
 import { recordSession } from "../../utils/record-session.ts";
 import { formatDuration, lectureTitle, STATUS_LABEL } from "../../utils/lecture-format.ts";
 import { readHomeQueryFromBrowser, writeHomeQuery } from "../../utils/home-query.ts";
@@ -21,6 +21,17 @@ type LectureRow = {
 	status: SessionStatus;
 	audioMs: number;
 	tags?: TagItem[];
+};
+type ProcessView = {
+	stage: string;
+	preview: string;
+	startedAt: number;
+};
+
+const STAGE_LABEL: Record<string, string> = {
+	transcribe: "Transcription",
+	classify: "Classement",
+	fiche: "Rédaction de la fiche",
 };
 
 function liveRow(lecture: LectureRow): LectureRow {
@@ -99,6 +110,27 @@ function groupLectures(visible: LectureRow[], subjects: SubjectItem[]) {
 	return groups;
 }
 
+function applyProcessEvent(
+	current: Record<string, ProcessView>,
+	id: string,
+	event: ProcessStreamEvent,
+): Record<string, ProcessView> | null {
+	const prev = current[id] || { stage: "transcribe", preview: "", startedAt: Date.now() };
+	if (event.type === "init") {
+		return { ...current, [id]: { stage: event.stage, preview: event.preview, startedAt: event.startedAt } };
+	}
+	if (event.type === "stage") {
+		return {
+			...current,
+			[id]: { ...prev, stage: event.stage, preview: event.stage === "fiche" ? prev.preview : "" },
+		};
+	}
+	if (event.type === "delta") {
+		return { ...current, [id]: { ...prev, preview: (prev.preview + event.text).slice(-4000) } };
+	}
+	return null;
+}
+
 function applyHomeQuery(
 	q: { value: string },
 	appliedQ: { value: string },
@@ -137,7 +169,11 @@ export default function Home({
 	const error = useSignal<string | null>(initialError || null);
 	const filtersRef = useRef<HTMLButtonElement>(null);
 	const recTick = useSignal(0);
+	const processTick = useSignal(0);
+	const processById = useSignal<Record<string, ProcessView>>({});
+	const watching = useRef(new Map<string, AbortController>());
 	void recTick.value;
+	void processTick.value;
 
 	function syncQuery() {
 		writeHomeQuery({ q: appliedQ.value, subject: subjectFilter.value, filters: filters.value });
@@ -181,16 +217,39 @@ export default function Home({
 
 	useEffect(() => {
 		if (!treatingIds) return;
-
-		const ac = new AbortController();
-		void Promise.all(
-			treatingIds.split(",").map((id) => waitLecture(id, ac.signal).catch(() => {})),
-		).then(() => {
-			if (!ac.signal.aborted) void load();
-		});
-
-		return () => ac.abort();
+		const timer = setInterval(() => processTick.value++, 1000);
+		return () => clearInterval(timer);
 	}, [treatingIds]);
+
+	useEffect(() => {
+		if (!treatingIds) return;
+
+		for (const id of treatingIds.split(",")) {
+			if (watching.current.has(id)) continue;
+			const ac = new AbortController();
+			watching.current.set(id, ac);
+			if (!processById.value[id]) {
+				processById.value = {
+					...processById.value,
+					[id]: { stage: "transcribe", preview: "", startedAt: Date.now() },
+				};
+			}
+			void watchLectureProcess(id, (event) => {
+				const next = applyProcessEvent(processById.value, id, event);
+				if (next) processById.value = next;
+			}, ac.signal).catch(() => {}).finally(() => {
+				watching.current.delete(id);
+				if (!ac.signal.aborted) void load();
+			});
+		}
+	}, [treatingIds]);
+
+	useEffect(() => {
+		return () => {
+			for (const ac of watching.current.values()) ac.abort();
+			watching.current.clear();
+		};
+	}, []);
 
 	useEffect(() => {
 		let wasBusy = recordSession.status !== "idle";
@@ -347,6 +406,23 @@ export default function Home({
 				>
 					{inner}
 				</button>
+			);
+		}
+
+		if (row.status === SessionStatus.PROCESSING) {
+			const progress = processById.value[row.id];
+			return (
+				<div class="lecture-row" aria-current={selected ? "true" : undefined}>
+					{inner}
+					<div class="lecture-stream">
+						<p>
+							{STAGE_LABEL[progress?.stage || ""] || "Traitement"}
+							{" · "}
+							{formatDuration(Math.max(0, Date.now() - (progress?.startedAt || Date.now())))}
+						</p>
+						{progress?.preview ? <pre>{progress.preview}</pre> : null}
+					</div>
+				</div>
 			);
 		}
 

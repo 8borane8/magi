@@ -1,11 +1,12 @@
 import { Router, z } from "@webtools/expressapi";
 
+import * as processEvents from "@/services/process-events.ts";
 import { SessionStatus } from "@magi/shared/types/session";
 import * as recording from "@/services/recording.ts";
 import * as storage from "@/services/storage.ts";
 import { Lecture } from "@/models/lecture.ts";
-import { config } from "@/config.ts";
 import * as ai from "@/services/ai/index.ts";
+import { config } from "@/config.ts";
 
 function isLive(status: SessionStatus): boolean {
 	return [SessionStatus.RECORDING, SessionStatus.PAUSED].includes(status);
@@ -21,17 +22,28 @@ async function hasTranscript(lectureId: string): Promise<boolean> {
 }
 
 async function processLecture(lectureId: string): Promise<void> {
+	processEvents.startProcess(lectureId);
 	const lecture = await Lecture.findByPk(lectureId);
-	if (!lecture) return;
+	if (!lecture) {
+		processEvents.endProcess(lectureId, "lecture_not_found");
+		return;
+	}
 
 	try {
-		if (!await hasTranscript(lectureId)) await ai.transcribe(lectureId);
+		if (!await hasTranscript(lectureId)) {
+			processEvents.setStage(lectureId, "transcribe");
+			await ai.transcribe(lectureId);
+		}
+		processEvents.setStage(lectureId, "classify");
 		await ai.classify(lectureId);
-		await ai.writeFiche(lectureId);
+		processEvents.setStage(lectureId, "fiche");
+		await ai.writeFiche(lectureId, (text) => processEvents.appendDelta(lectureId, text));
 		await lecture.update({ status: SessionStatus.COMPLETED });
+		processEvents.endProcess(lectureId);
 	} catch (error) {
 		console.error(error);
 		await lecture.update({ status: SessionStatus.FAILED });
+		processEvents.endProcess(lectureId, error instanceof Error ? error.message : "failed");
 	}
 }
 

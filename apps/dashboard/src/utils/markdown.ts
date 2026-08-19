@@ -337,6 +337,19 @@ marked.use({
 				CALLOUT_LABEL[callout.variant]
 			}</p>${body}</aside>\n`;
 		},
+		table({ header, rows }) {
+			const row = (cells: Tokens.TableCell[]) =>
+				`<tr>${
+					cells.map((cell) => {
+						const tag = cell.header ? "th" : "td";
+						const align = cell.align ? ` style="text-align:${cell.align}"` : "";
+						return `<${tag}${align}>${this.parser.parseInline(cell.tokens)}</${tag}>`;
+					}).join("")
+				}</tr>`;
+			return `<div class="table-wrap"><table><thead>${row(header)}</thead><tbody>${
+				rows.map(row).join("")
+			}</tbody></table></div>\n`;
+		},
 	},
 });
 

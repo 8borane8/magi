@@ -12,12 +12,13 @@ export const config = {
 	idleFileTtlMs: 2 * 60 * 1000,
 	staleChunkMs: 15_000,
 
-	maxChatImages: 4,
-	maxChatImageBytes: 5 * 1024 * 1024,
+	maxChatFiles: 4,
+	maxChatFileBytes: 5 * 1024 * 1024,
 
 	ollamaUrl: Deno.env.get("OLLAMA_URL") || "http://127.0.0.1:11434",
 	ollamaChatModel: Deno.env.get("OLLAMA_CHAT_MODEL") || "llama3.2",
 	ollamaVisionModel: Deno.env.get("OLLAMA_VISION_MODEL") || "llava",
+	ollamaTimeoutMs: 30 * 60 * 1000,
 
 	whisperxBin: Deno.env.get("WHISPERX_BIN") || "whisperx",
 	whisperxModel: Deno.env.get("WHISPERX_MODEL") || "large-v2",

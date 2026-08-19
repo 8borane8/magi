@@ -3,6 +3,7 @@
 	"version": "0.1.0",
 
 	"exports": {
-		"./types/session": "./types/session.ts"
+		"./types/session": "./types/session.ts",
+		"./types/chat-file": "./types/chat-file.ts"
 	}
 }

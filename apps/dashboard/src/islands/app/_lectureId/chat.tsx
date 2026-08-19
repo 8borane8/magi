@@ -1,18 +1,47 @@
-import { ArrowLeft, ImagePlus, Maximize2, Send, Trash2, X } from "lucide-preact";
+import { ArrowLeft, FileText, Maximize2, Paperclip, Send, Trash2, X } from "lucide-preact";
 import { useSignal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 
+import { type ChatFileKind, chatFileKind } from "@magi/shared/types/chat-file";
+
 import ChatMessage, { type ChatMessageData } from "../../../components/chat-message.tsx";
 import { createClient } from "../../../client.ts";
+import { formatDuration } from "../../../utils/lecture-format.ts";
+import { readNdjson } from "../../../utils/ndjson.ts";
 
-const MAX_IMAGES = 4;
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const MAX_FILES = 4;
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const FILE_HINT = "Fichiers : JPEG, PNG, WebP, GIF, PDF ou TXT, 5 Mo max, 4 maximum.";
+const SEND_ERRORS: Record<string, string> = {
+	context_exceeded:
+		"Le contexte du modèle est trop petit pour ce cours. Augmente OLLAMA_CONTEXT_LENGTH ou raccourcis l'historique.",
+	unsupported_file: FILE_HINT,
+	pdf_unreadable: "Impossible de lire ce PDF.",
+};
 
-type DraftImage = {
+type DraftFile = {
 	file: File;
 	url: string;
+	kind: ChatFileKind;
 };
+
+type ChatStreamEvent =
+	| { type: "user"; data: ChatMessageData }
+	| { type: "delta"; text: string }
+	| { type: "done"; data: ChatMessageData }
+	| { type: "error"; error: string };
+
+function filesFromDataTransfer(data: DataTransfer | null): File[] {
+	if (!data) return [];
+	if (data.files.length) return [...data.files];
+	return [...data.items].map((item) => item.getAsFile()).filter((file): file is File => file !== null);
+}
+
+function revokeDraft(items: DraftFile[]) {
+	for (const item of items) {
+		if (item.url) URL.revokeObjectURL(item.url);
+	}
+}
 
 export default function LectureChat({
 	lectureId,
@@ -31,9 +60,13 @@ export default function LectureChat({
 		Array.isArray(initialMessages) ? initialMessages : [],
 	);
 	const draft = useSignal("");
-	const images = useSignal<DraftImage[]>([]);
+	const files = useSignal<DraftFile[]>([]);
 	const pending = useSignal(!Array.isArray(initialMessages));
 	const sending = useSignal(false);
+	const streamText = useSignal("");
+	const sendStartedAt = useSignal(0);
+	const tick = useSignal(0);
+	const dropping = useSignal(false);
 	const error = useSignal<string | null>(null);
 	const listRef = useRef<HTMLOListElement>(null);
 	const dialogRef = useRef<HTMLDialogElement>(null);
@@ -41,89 +74,133 @@ export default function LectureChat({
 
 	const srcPrefix = `${nodeUrl.replace(/\/+$/, "")}/lectures/${lectureId}/chat`;
 	const count = messages.value.length;
-	const canSend = Boolean(draft.value.trim() || images.value.length);
+	const canSend = Boolean(draft.value.trim() || files.value.length);
 	const Tag = fullPage ? "section" : "aside";
+	void tick.value;
 
 	useEffect(() => {
 		let cancelled = false;
 
 		if (Array.isArray(initialMessages)) {
 			pending.value = false;
-			return () => {
-				cancelled = true;
-				for (const item of images.value) URL.revokeObjectURL(item.url);
-			};
+		} else {
+			void (async () => {
+				try {
+					const result = await createClient().get("/lectures/:lectureId/chat", {
+						params: { lectureId },
+					});
+					if (!result.success || !Array.isArray(result.data)) throw new Error("chat_load_failed");
+					if (!cancelled) messages.value = result.data;
+				} catch {
+					if (!cancelled) error.value = "Impossible de charger la conversation.";
+				} finally {
+					if (!cancelled) pending.value = false;
+				}
+			})();
 		}
-
-		void (async () => {
-			try {
-				const result = await createClient().get("/lectures/:lectureId/chat", {
-					params: { lectureId },
-				});
-				if (!result.success || !Array.isArray(result.data)) throw new Error("chat_load_failed");
-				if (!cancelled) messages.value = result.data;
-			} catch {
-				if (!cancelled) error.value = "Impossible de charger la conversation.";
-			} finally {
-				if (!cancelled) pending.value = false;
-			}
-		})();
 
 		return () => {
 			cancelled = true;
-			for (const item of images.value) URL.revokeObjectURL(item.url);
+			revokeDraft(files.value);
 		};
 	}, []);
 
 	useEffect(() => {
 		const list = listRef.current;
 		if (list) list.scrollTop = list.scrollHeight;
-	}, [count, sending.value, pending.value]);
+	}, [count, sending.value, pending.value, streamText.value]);
 
-	function addFiles(list: FileList | null) {
-		if (!list) return;
+	useEffect(() => {
+		if (!sending.value) return;
+		const timer = setInterval(() => tick.value++, 1000);
+		return () => clearInterval(timer);
+	}, [sending.value]);
 
-		const next = [...images.value];
+	function addFiles(list: Iterable<File>) {
+		const next = [...files.value];
 		let rejected = false;
 
 		for (const file of list) {
-			if (next.length >= MAX_IMAGES) {
+			if (next.length >= MAX_FILES) {
 				rejected = true;
 				break;
 			}
-			if (!IMAGE_TYPES.has(file.type) || file.size > MAX_IMAGE_BYTES) {
+			const kind = chatFileKind(file.type, file.name);
+			if (!kind || file.size > MAX_FILE_BYTES) {
 				rejected = true;
 				continue;
 			}
-			next.push({ file, url: URL.createObjectURL(file) });
+			next.push({
+				file,
+				kind,
+				url: kind === "image" ? URL.createObjectURL(file) : "",
+			});
 		}
 
-		images.value = next;
-		error.value = rejected ? "Images : JPEG, PNG, WebP ou GIF, 5 Mo max, 4 maximum." : error.value;
+		files.value = next;
+		error.value = rejected ? FILE_HINT : error.value;
 	}
 
-	function removeImage(index: number) {
-		const next = [...images.value];
+	function removeFile(index: number) {
+		const next = [...files.value];
 		const [removed] = next.splice(index, 1);
-		if (removed) URL.revokeObjectURL(removed.url);
-		images.value = next;
+		if (removed?.url) URL.revokeObjectURL(removed.url);
+		files.value = next;
+	}
+
+	function onPaste(event: ClipboardEvent) {
+		const pasted = filesFromDataTransfer(event.clipboardData);
+		if (pasted.length === 0) return;
+		event.preventDefault();
+		addFiles(pasted);
+	}
+
+	function onDragOver(event: DragEvent) {
+		if (![...event.dataTransfer?.items || []].some((item) => item.kind === "file")) return;
+		event.preventDefault();
+		if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+		dropping.value = true;
+	}
+
+	function onDragLeave(event: DragEvent) {
+		const next = event.relatedTarget as Node | null;
+		if (next && event.currentTarget instanceof Node && event.currentTarget.contains(next)) return;
+		dropping.value = false;
+	}
+
+	function onDrop(event: DragEvent) {
+		event.preventDefault();
+		dropping.value = false;
+		addFiles(filesFromDataTransfer(event.dataTransfer));
 	}
 
 	async function onSubmit(event: Event) {
 		event.preventDefault();
 		const content = draft.value.trim();
-		const attached = images.value;
+		const attached = files.value;
 		if ((!content && attached.length === 0) || sending.value) return;
 
 		sending.value = true;
+		streamText.value = "";
+		sendStartedAt.value = Date.now();
 		error.value = null;
+		draft.value = "";
+		files.value = [];
+
+		let userId: string | null = null;
+		const restore = (message: string) => {
+			if (userId) messages.value = messages.value.filter((item) => item.id !== userId);
+			error.value = message;
+			draft.value = content;
+			files.value = attached;
+		};
 
 		try {
 			if (!nodeUrl) throw new Error("no_node");
 
 			const body = new FormData();
 			body.append("content", content);
-			for (const item of attached) body.append("images", item.file);
+			for (const item of attached) body.append("files", item.file);
 
 			const response = await fetch(
 				`${nodeUrl.replace(/\/+$/, "")}/lectures/${encodeURIComponent(lectureId)}/chat`,
@@ -132,28 +209,35 @@ export default function LectureChat({
 					body,
 				},
 			);
-			const result = await response.json() as {
-				success?: boolean;
-				data?: ChatMessageData[];
-				error?: string;
-			};
-			if (!result.success || !Array.isArray(result.data)) {
-				if (result.error === "context_exceeded") {
-					error.value =
-						"Le contexte du modèle est trop petit pour ce cours. Augmente OLLAMA_CONTEXT_LENGTH ou raccourcis l'historique.";
-					return;
-				}
-				throw new Error("chat_send_failed");
+			const mime = response.headers.get("content-type") || "";
+
+			if (!mime.includes("ndjson")) {
+				const code = (await response.json() as { error?: string }).error;
+				restore((code && SEND_ERRORS[code]) || "Envoi impossible.");
+				return;
 			}
 
-			for (const item of attached) URL.revokeObjectURL(item.url);
-			draft.value = "";
-			images.value = [];
-			messages.value = [...messages.value, ...result.data];
+			for await (const event of readNdjson<ChatStreamEvent>(response)) {
+				if (event.type === "user") {
+					userId = event.data.id;
+					messages.value = [...messages.value, event.data];
+				} else if (event.type === "delta") {
+					streamText.value += event.text;
+				} else if (event.type === "done") {
+					revokeDraft(attached);
+					messages.value = [...messages.value, event.data];
+					streamText.value = "";
+					sending.value = false;
+				} else if (event.type === "error") {
+					restore(SEND_ERRORS[event.error] || "Envoi impossible.");
+					sending.value = false;
+				}
+			}
 		} catch {
-			error.value = "Envoi impossible.";
+			restore("Envoi impossible.");
 		} finally {
 			sending.value = false;
+			streamText.value = "";
 		}
 	}
 
@@ -184,7 +268,16 @@ export default function LectureChat({
 	}
 
 	return (
-		<Tag id="lecture-chat" data-full={fullPage ? "" : undefined} aria-busy={sending.value || pending.value}>
+		<Tag
+			id="lecture-chat"
+			data-full={fullPage ? "" : undefined}
+			data-drop={dropping.value ? "" : undefined}
+			aria-busy={sending.value || pending.value}
+			onPaste={onPaste}
+			onDragOver={onDragOver}
+			onDragLeave={onDragLeave}
+			onDrop={onDrop}
+		>
 			<div>
 				{fullPage
 					? (
@@ -228,7 +321,7 @@ export default function LectureChat({
 			{error.value && <p class="error">{error.value}</p>}
 
 			{!pending.value && count === 0 && !sending.value && (
-				<p>Posez une question sur ce cours. Le prof s'appuiera sur la fiche.</p>
+				<p>Posez une question sur ce cours. Vous pouvez coller ou déposer une image, un PDF ou un TXT.</p>
 			)}
 
 			{(count > 0 || sending.value) && (
@@ -237,8 +330,9 @@ export default function LectureChat({
 						<ChatMessage key={message.id} message={message} srcPrefix={srcPrefix} />
 					))}
 					{sending.value && (
-						<li data-pending="">
-							<p>Le prof écrit...</p>
+						<li data-role="assistant" data-pending="">
+							<p>{streamText.value || "Le prof écrit..."}</p>
+							<time>{formatDuration(Math.max(0, Date.now() - sendStartedAt.value))}</time>
 						</li>
 					)}
 				</ol>
@@ -257,17 +351,22 @@ export default function LectureChat({
 					}}
 					onKeyDown={onKeyDown}
 				/>
-				{images.value.length > 0 && (
+				{files.value.length > 0 && (
 					<ul>
-						{images.value.map((item, index) => (
-							<li key={item.url}>
-								<img src={item.url} alt={item.file.name} />
+						{files.value.map((item, index) => (
+							<li key={`${item.file.name}-${index}`} data-kind={item.kind}>
+								{item.kind === "image" ? <img src={item.url} alt={item.file.name} /> : (
+									<>
+										<FileText size={16} aria-hidden="true" />
+										<span>{item.file.name}</span>
+									</>
+								)}
 								<button
 									type="button"
 									class="btn btn-icon"
 									disabled={sending.value}
 									aria-label={`Retirer ${item.file.name}`}
-									onClick={() => removeImage(index)}
+									onClick={() => removeFile(index)}
 								>
 									<X size={12} aria-hidden="true" />
 								</button>
@@ -280,23 +379,23 @@ export default function LectureChat({
 						<input
 							ref={fileRef}
 							type="file"
-							accept="image/jpeg,image/png,image/webp,image/gif"
+							accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,.pdf,.txt"
 							multiple
 							hidden
 							disabled={sending.value}
 							onChange={(event) => {
-								addFiles(event.currentTarget.files);
+								addFiles(event.currentTarget.files || []);
 								event.currentTarget.value = "";
 							}}
 						/>
 						<button
 							type="button"
 							class="btn btn-icon"
-							disabled={sending.value || images.value.length >= MAX_IMAGES}
-							aria-label="Joindre une image"
+							disabled={sending.value || files.value.length >= MAX_FILES}
+							aria-label="Joindre un fichier"
 							onClick={() => fileRef.current?.click()}
 						>
-							<ImagePlus size={16} aria-hidden="true" />
+							<Paperclip size={16} aria-hidden="true" />
 						</button>
 					</li>
 					<li>

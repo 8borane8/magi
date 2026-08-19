@@ -1,0 +1,77 @@
+.markdown .table-wrap {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+}
+
+.markdown .table-wrap > table {
+	width: 100%;
+
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	line-height: 1.5;
+
+	border-collapse: separate;
+	border-spacing: 0;
+
+	margin: 0;
+}
+
+.markdown table th,
+.markdown table td {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	line-height: 1.5;
+
+	text-align: left;
+	vertical-align: top;
+	white-space: normal;
+	overflow-wrap: anywhere;
+
+	padding: 0.7rem 0.8rem;
+
+	background: var(--color-bg-elevated);
+	border: none;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.markdown table th {
+	color: var(--color-text-muted);
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+
+	background: var(--color-bg-muted);
+}
+
+.markdown table tr:last-child th,
+.markdown table tr:last-child td {
+	border-bottom: none;
+}
+
+.markdown table td:first-child {
+	font-weight: 600;
+}
+
+@media (max-width: 640px) {
+	.markdown table {
+		font-size: 0.75rem;
+	}
+
+	.markdown table th,
+	.markdown table td {
+		padding: 0.55rem 0.6rem;
+	}
+}

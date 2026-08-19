@@ -1,6 +1,8 @@
-import { patchWebmHeaders } from "@/utils/webm-duration.ts";
-import { config } from "@/config.ts";
 import { join } from "@std/path";
+import { chatFileExt, type ChatFileKind } from "@magi/shared/types/chat-file";
+
+import { config } from "@/config.ts";
+import { patchWebmHeaders } from "@/utils/webm-duration.ts";
 
 type OpenRecord = {
 	file: Deno.FsFile;
@@ -108,25 +110,27 @@ export function closeLectureFiles(lectureId: string): void {
 	}
 }
 
-const IMAGE_EXT: Record<string, string> = {
-	"image/jpeg": "jpg",
-	"image/png": "png",
-	"image/webp": "webp",
-	"image/gif": "gif",
-};
-
-export async function saveChatImage(lectureId: string, file: File): Promise<string> {
-	const ext = IMAGE_EXT[file.type];
-	if (!ext) throw new Error("unsupported_image");
-
-	const fileName = `${crypto.randomUUID()}.${ext}`;
+export async function saveChatFile(lectureId: string, file: File, kind: ChatFileKind): Promise<string> {
+	const fileName = `${crypto.randomUUID()}.${chatFileExt(kind, file.type, file.name)}`;
 	await Deno.mkdir(chatDir(lectureId), { recursive: true });
 	await Deno.writeFile(chatFilePath(lectureId, fileName), new Uint8Array(await file.arrayBuffer()));
 	return fileName;
 }
 
 export function isSafeChatFileName(fileName: string): boolean {
-	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif)$/i.test(fileName);
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif|pdf|txt)$/i.test(
+		fileName,
+	);
+}
+
+export async function removeChatFiles(lectureId: string, names: string[]): Promise<void> {
+	await Promise.all(names.map(async (name) => {
+		try {
+			await Deno.remove(chatFilePath(lectureId, name));
+		} catch {
+			// Already gone.
+		}
+	}));
 }
 
 export async function removeChatDir(lectureId: string): Promise<void> {

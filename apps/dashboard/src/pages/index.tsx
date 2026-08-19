@@ -11,7 +11,7 @@ export default {
 	title: "Accueil | Magi",
 
 	styles: [
-		"/styles/app/home.css",
+		"/styles/app/home/index.css",
 	],
 	scripts: [],
 

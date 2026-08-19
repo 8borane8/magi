@@ -1,15 +1,32 @@
 import { Router, z } from "@webtools/expressapi";
 
-import { ChatMessage, ChatRole } from "@/models/chat-message.ts";
+import { chatFileKind } from "@magi/shared/types/chat-file";
+import { type ChatAttachment, ChatMessage, ChatRole } from "@/models/chat-message.ts";
 import type { Lecture } from "@/models/lecture.ts";
-import { reply } from "@/services/ai/index.ts";
+import { replyStream } from "@/services/ai/index.ts";
+import { readChatDocument } from "@/services/ai/documents.ts";
 import * as storage from "@/services/storage.ts";
 import { sendFile } from "@/utils/files.ts";
+import { sendNdjson } from "@/utils/ndjson.ts";
 import { config } from "@/config.ts";
 
-const chatImage = z.file()
-	.type(["image/jpeg", "image/png", "image/webp", "image/gif"])
-	.maxSize(config.maxChatImageBytes);
+const chatFile = z.file().maxSize(config.maxChatFileBytes);
+
+function publicMessage(item: ChatMessage) {
+	const json = item.toJSON();
+	if (!json.attachments) return json;
+	return {
+		...json,
+		attachments: json.attachments.map(({ kind, path, name }) => ({ kind, path, name })),
+	};
+}
+
+function chatError(error: unknown): { status: number; error: string } {
+	const code = error instanceof Error ? error.message : "";
+	if (code === "pdf_unreadable") return { status: 400, error: code };
+	if (code === "context_exceeded") return { status: 413, error: code };
+	return { status: 502, error: "ai_unavailable" };
+}
 
 export default new Router<{ lecture: Lecture }>()
 	.get("/:lectureId/chat", async (req, res) => {
@@ -20,7 +37,7 @@ export default new Router<{ lecture: Lecture }>()
 
 		return res.json({
 			success: true,
-			data: items.map((item) => item.toJSON()),
+			data: items.map(publicMessage),
 		});
 	})
 	.get("/:lectureId/chat/:fileName", (req, res) => {
@@ -38,19 +55,42 @@ export default new Router<{ lecture: Lecture }>()
 		async (req, res) => {
 			const lecture = req.data.lecture;
 			const content = (req.body.content || "").trim();
-			const images = [req.body.images || []].flat();
+			const files = [req.body.files || []].flat();
 
-			if (!content && images.length === 0) {
+			if (!content && files.length === 0) {
 				return res.status(400).json({
 					success: false as const,
 					error: "empty_message",
 				});
 			}
 
-			const attachments = await Promise.all(images.map(async (file) => ({
-				kind: "image" as const,
-				path: await storage.saveChatImage(lecture.id, file),
-			})));
+			const attachments: ChatAttachment[] = [];
+			try {
+				for (const file of files) {
+					const kind = chatFileKind(file.type, file.name);
+					if (!kind) {
+						await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
+						return res.status(400).json({
+							success: false as const,
+							error: "unsupported_file",
+						});
+					}
+
+					const path = await storage.saveChatFile(lecture.id, file, kind);
+					const attachment: ChatAttachment = { kind, path, name: file.name };
+					if (kind !== "image") {
+						attachment.text = await readChatDocument(storage.chatFilePath(lecture.id, path), kind);
+					}
+					attachments.push(attachment);
+				}
+			} catch (error) {
+				await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
+				const failed = chatError(error);
+				return res.status(failed.status).json({
+					success: false as const,
+					error: failed.error,
+				});
+			}
 
 			const previous = await ChatMessage.findAll({
 				where: { lectureId: lecture.id },
@@ -64,58 +104,48 @@ export default new Router<{ lecture: Lecture }>()
 				attachments: attachments.length ? attachments : null,
 			});
 
-			const history = [
-				...previous.map((item) => ({ role: item.role, content: item.content })),
-				{ role: user.role, content: user.content },
-			];
+			return sendNdjson(res, async (send) => {
+				send({ type: "user", data: publicMessage(user) });
 
-			let answer: string;
-			try {
-				answer = await reply({
-					lecture,
-					history,
-					userText: content,
-					imagePaths: attachments.map((item) => storage.chatFilePath(lecture.id, item.path)),
-				});
-			} catch (error) {
-				console.error(error);
-				await user.destroy();
-				for (const item of attachments) {
-					try {
-						await Deno.remove(storage.chatFilePath(lecture.id, item.path));
-					} catch {
-						// Already gone.
+				let answer = "";
+				try {
+					for await (
+						const piece of replyStream({
+							lecture,
+							history: [...previous, user].map((item) => ({
+								role: item.role,
+								content: item.content,
+								attachments: item.attachments,
+							})),
+						})
+					) {
+						answer += piece;
+						send({ type: "delta", text: piece });
 					}
-				}
-				if (error instanceof Error && error.message === "context_exceeded") {
-					return res.status(413).json({
-						success: false as const,
-						error: "context_exceeded",
+
+					if (!answer.trim()) throw new Error("empty_reply");
+
+					const assistant = await ChatMessage.create({
+						lectureId: lecture.id,
+						role: ChatRole.ASSISTANT,
+						content: answer.trim(),
+						attachments: null,
 					});
+
+					send({ type: "done", data: publicMessage(assistant) });
+				} catch (error) {
+					console.error(error);
+					await user.destroy();
+					await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
+					send({ type: "error", error: chatError(error).error });
 				}
-				return res.status(502).json({
-					success: false as const,
-					error: "ai_unavailable",
-				});
-			}
-
-			const assistant = await ChatMessage.create({
-				lectureId: lecture.id,
-				role: ChatRole.ASSISTANT,
-				content: answer,
-				attachments: null,
-			});
-
-			return res.json({
-				success: true as const,
-				data: [user.toJSON(), assistant.toJSON()],
 			});
 		},
 		[],
 		{
 			body: z.object({
 				content: z.optional(z.string().max(4000)),
-				images: z.optional(z.union([chatImage, z.array(chatImage).max(config.maxChatImages)])),
+				files: z.optional(z.union([chatFile, z.array(chatFile).max(config.maxChatFiles)])),
 			}),
 		},
 	)

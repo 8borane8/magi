@@ -37,8 +37,19 @@ function catalogBlock(label: string, names: string[]): string {
 	return `${label} :\n${names.map((name) => `- ${name}`).join("\n")}`;
 }
 
+function normalizeName(name: string): string {
+	return name
+		.normalize("NFD")
+		.replace(/\p{M}/gu, "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/gi, " ")
+		.trim();
+}
+
 function matchName<T extends { name: string }>(items: T[], name: string): T | undefined {
-	return items.find((item) => item.name.toLowerCase() === name.toLowerCase());
+	const key = normalizeName(name);
+	if (!key) return undefined;
+	return items.find((item) => normalizeName(item.name) === key);
 }
 
 async function findOrCreateSubject(name: string, known: Subject[]): Promise<Subject> {
@@ -85,13 +96,19 @@ export async function classify(lectureId: string): Promise<void> {
 	const payload = parseJson(raw);
 	const title = asName(payload.title).slice(0, 80);
 	if (!title) throw new Error("classify_missing_title");
+
 	const subjectName = asName(payload.subject);
-	const tagNames = [...new Map(
-		(Array.isArray(payload.tags) ? payload.tags : [])
-			.map(asName)
-			.filter(Boolean)
-			.map((name) => [name.toLowerCase(), name] as const),
-	).values()].slice(0, 8);
+	const subjectKey = normalizeName(subjectName);
+	const seen = new Set<string>();
+	const tagNames: string[] = [];
+	for (const item of Array.isArray(payload.tags) ? payload.tags : []) {
+		const name = asName(item);
+		const key = normalizeName(name);
+		if (!key || key === subjectKey || seen.has(key)) continue;
+		seen.add(key);
+		tagNames.push(name);
+		if (tagNames.length >= 6) break;
+	}
 
 	if (subjectName) {
 		const subject = await findOrCreateSubject(subjectName, subjects);

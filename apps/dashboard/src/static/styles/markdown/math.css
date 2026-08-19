@@ -1,0 +1,41 @@
+@import url("https://esm.sh/katex@0.18.4/dist/katex.min.css");
+
+.markdown .katex {
+	color: var(--color-text);
+	font-size: 1.05em;
+
+	white-space: nowrap;
+	overflow-wrap: normal;
+	word-break: normal;
+}
+
+.markdown .katex-display {
+	min-width: 0;
+
+	color: var(--color-text);
+	font-size: 1.15rem;
+
+	margin: 0;
+	padding: var(--space-4);
+
+	overflow-x: auto;
+
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-sm);
+}
+
+.markdown .katex-display > .katex {
+	color: var(--color-text);
+	font-size: 1em;
+}
+
+.markdown .fiche-box .katex-display {
+	background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
+}
+
+@media (max-width: 640px) {
+	.markdown .katex-display {
+		font-size: 0.85em;
+	}
+}

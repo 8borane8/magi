@@ -1,3 +1,9 @@
+@import url("../../markdown/index.css");
+@import url("./meta.css");
+@import url("./fiche.css");
+@import url("./chat.css");
+@import url("./audio.css");
+
 #lecture {
 	width: 100%;
 	min-height: 0;

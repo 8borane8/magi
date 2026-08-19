@@ -11,6 +11,8 @@ import { Lecture } from "@/models/lecture.ts";
 import recordingRouter from "@/routes/lectures/recording.ts";
 import chatRouter from "@/routes/lectures/chat.ts";
 import dataRouter from "@/routes/lectures/data.ts";
+import * as processEvents from "@/services/process-events.ts";
+import { sendNdjson } from "@/utils/ndjson.ts";
 
 const withRelations = [{ association: "subject" }, { association: "tags" }];
 
@@ -98,14 +100,12 @@ export default new Router()
 			data: req.data.lecture.toJSON(),
 		});
 	})
-	.get("/:lectureId/wait", async (req, res) => {
-		await recording.whenProcessed(req.data.lecture.id);
-		await req.data.lecture.reload({ include: withRelations });
-
-		return res.json({
-			success: true as const,
-			data: req.data.lecture.toJSON(),
-		});
+	.get("/:lectureId/wait", (req, res) => {
+		const lectureId = req.data.lecture.id;
+		return sendNdjson(
+			res,
+			(send, signal) => processEvents.followProcess(lectureId, send, recording.whenProcessed(lectureId), signal),
+		);
 	})
 	.patch(
 		"/:lectureId",

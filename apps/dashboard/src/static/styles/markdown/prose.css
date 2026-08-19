@@ -1,0 +1,260 @@
+.markdown h2 {
+	color: var(--color-text);
+	font-family: var(--font-serif);
+	font-size: clamp(1.6rem, 2.6vw, 2rem);
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.2;
+
+	display: block;
+}
+
+.markdown h3 {
+	color: var(--color-text);
+	font-family: var(--font-serif);
+	font-size: 1.25rem;
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.3;
+
+	display: block;
+
+	margin: var(--space-5) 0 var(--space-2);
+	padding-bottom: var(--space-2);
+
+	border-bottom: 2px solid var(--color-border-strong);
+}
+
+.markdown h4 {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--text-md);
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.4;
+
+	display: block;
+
+	margin: var(--space-4) 0 var(--space-2);
+}
+
+.markdown p {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: inherit;
+	font-weight: 400;
+	font-style: normal;
+	line-height: inherit;
+
+	display: block;
+
+	margin: 0;
+}
+
+.markdown strong {
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: 600;
+	font-style: inherit;
+	line-height: inherit;
+
+	display: inline;
+}
+
+.markdown em {
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	font-style: italic;
+	line-height: inherit;
+
+	display: inline;
+}
+
+.markdown ul,
+.markdown ol {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: inherit;
+	font-weight: 400;
+	line-height: 1.65;
+
+	display: block;
+
+	margin: 0;
+	padding-left: 1.4rem;
+}
+
+.markdown ul {
+	list-style-type: disc;
+	list-style-position: outside;
+}
+
+.markdown ol {
+	list-style-type: decimal;
+	list-style-position: outside;
+}
+
+.markdown li {
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: inherit;
+	font-weight: 400;
+	line-height: 1.65;
+
+	display: list-item;
+
+	margin: 0 0 var(--space-2);
+	padding: 0;
+}
+
+.markdown li:last-child {
+	margin-bottom: 0;
+}
+
+.markdown li::marker {
+	color: var(--color-text-muted);
+	font-weight: 600;
+}
+
+.markdown a {
+	color: var(--color-accent);
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: 600;
+	font-style: inherit;
+	line-height: inherit;
+
+	text-decoration: underline;
+	text-underline-offset: 0.18em;
+
+	display: inline;
+
+	cursor: pointer;
+}
+
+.markdown a:hover {
+	color: var(--color-accent-hover);
+}
+
+.markdown a.fiche-ref {
+	padding: 0.05em 0.28em;
+
+	background: var(--fiche-def-bg);
+	border-radius: var(--radius-sm);
+}
+
+.markdown mark {
+	color: var(--color-text);
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: 600;
+	font-style: inherit;
+	line-height: inherit;
+
+	display: inline;
+
+	padding: 0.08em 0.32em;
+
+	background: var(--fiche-warn-bg);
+	border-radius: var(--radius-sm);
+}
+
+.markdown mark[data-kind="def"] {
+	color: var(--fiche-def);
+	background: var(--fiche-def-bg);
+}
+
+.markdown mark[data-kind="thm"] {
+	color: var(--fiche-thm);
+	background: var(--fiche-thm-bg);
+}
+
+.markdown mark[data-kind="prop"] {
+	color: var(--fiche-prop);
+	background: var(--fiche-prop-bg);
+}
+
+.markdown mark[data-kind="warn"] {
+	color: var(--fiche-danger);
+	background: var(--fiche-danger-bg);
+}
+
+.markdown mark[data-kind="demo"] {
+	color: var(--fiche-demo);
+	background: var(--fiche-demo-bg);
+}
+
+.markdown hr {
+	width: 100%;
+	height: 1px;
+
+	display: block;
+
+	margin: var(--space-2) 0;
+	padding: 0;
+
+	overflow: hidden;
+
+	background: var(--color-border-strong);
+	border: none;
+}
+
+.markdown figure:has(> img) {
+	width: 100%;
+
+	color: var(--fiche-paper-ink);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	line-height: 1.5;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: var(--space-2);
+
+	margin: 0;
+	padding: var(--space-3);
+
+	overflow: hidden;
+
+	background: var(--fiche-paper);
+	border: 1px solid var(--fiche-paper-line);
+	border-radius: var(--radius-md);
+}
+
+.markdown figure:has(> img) > img {
+	width: 100%;
+	height: auto;
+
+	display: block;
+
+	background: var(--fiche-paper);
+	border: none;
+	border-radius: var(--radius-sm);
+}
+
+.markdown figure:has(> img) > figcaption {
+	color: var(--fiche-paper-ink);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	font-style: italic;
+	line-height: 1.5;
+
+	display: block;
+
+	margin: 0;
+	padding: var(--space-1) var(--space-1) 0;
+}
+
+@media (max-width: 640px) {
+	.markdown figure:has(> img) {
+		padding: var(--space-2);
+	}
+}

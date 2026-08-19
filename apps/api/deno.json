@@ -16,7 +16,8 @@
 		"@std/http": "jsr:@std/http@^1.0.21",
 
 		"@sequelize/core": "npm:@sequelize/core@7.0.0-alpha.48",
-		"@sequelize/sqlite3": "npm:@sequelize/sqlite3@7.0.0-alpha.48"
+		"@sequelize/sqlite3": "npm:@sequelize/sqlite3@7.0.0-alpha.48",
+		"unpdf": "npm:unpdf@^1.4.5"
 	},
 
 	"compilerOptions": {

@@ -1,0 +1,46 @@
+@import url("./prose.css");
+@import url("./code.css");
+@import url("./diagram.css");
+@import url("./math.css");
+@import url("./table.css");
+@import url("./boxes.css");
+
+.markdown {
+	--fiche-def: var(--color-accent);
+	--fiche-def-bg: var(--color-accent-soft);
+	--fiche-thm: var(--color-theorem);
+	--fiche-thm-bg: var(--color-theorem-soft);
+	--fiche-prop: var(--color-success);
+	--fiche-prop-bg: var(--color-success-soft);
+	--fiche-demo: var(--color-demo);
+	--fiche-demo-bg: var(--color-demo-soft);
+	--fiche-warn: var(--color-warning);
+	--fiche-warn-bg: var(--color-warning-soft);
+	--fiche-danger: var(--color-danger);
+	--fiche-danger-bg: var(--color-danger-soft);
+	--fiche-paper: var(--color-fiche-paper);
+	--fiche-paper-ink: var(--color-fiche-paper-ink);
+	--fiche-paper-line: var(--color-fiche-paper-line);
+
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: var(--space-4);
+}
+
+.markdown > * {
+	min-width: 0;
+	max-width: 100%;
+}

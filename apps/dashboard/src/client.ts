@@ -1,7 +1,8 @@
 import type { AppRouter } from "@magi/api";
 import { HttpClient } from "@webtools/expressapi";
-
 import { Cookies } from "@webtools/slick-client";
+
+import { readNdjson } from "./utils/ndjson.ts";
 
 type MagiClient = HttpClient<AppRouter>;
 
@@ -51,10 +52,25 @@ export function createClient(baseUrl?: string): MagiClient {
 	return new HttpClient<AppRouter>({ baseUrl: resolveNodeUrl(baseUrl) });
 }
 
-export async function waitLecture(lectureId: string, signal?: AbortSignal): Promise<void> {
+export type ProcessStreamEvent =
+	| { type: "init"; stage: string; startedAt: number; preview: string }
+	| { type: "stage"; stage: string }
+	| { type: "delta"; text: string }
+	| { type: "done" }
+	| { type: "error"; error: string };
+
+export async function watchLectureProcess(
+	lectureId: string,
+	onEvent: (event: ProcessStreamEvent) => void,
+	signal?: AbortSignal,
+): Promise<void> {
 	const url = nodeUrl();
 	if (!url) throw new Error("No node URL found.");
 
 	const response = await fetch(`${url}/lectures/${encodeURIComponent(lectureId)}/wait`, { signal });
 	if (!response.ok) throw new Error("wait_failed");
+
+	for await (const event of readNdjson<ProcessStreamEvent>(response)) {
+		onEvent(event);
+	}
 }

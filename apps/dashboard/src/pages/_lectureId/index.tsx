@@ -14,12 +14,7 @@ export default {
 	title: (req) => `${lectureTitle(req.data.lecture)} | Magi`,
 
 	styles: [
-		"/styles/app/_lectureId/layout.css",
-		"/styles/app/_lectureId/meta.css",
-		"/styles/app/_lectureId/fiche.css",
-		"/styles/app/_lectureId/chat.css",
-		"/styles/app/_lectureId/audio.css",
-		"/styles/app/_lectureId/dialog.css",
+		"/styles/app/_lectureId/index.css",
 	],
 	scripts: [],
 

@@ -1,17 +1,16 @@
 import { config } from "@/config.ts";
-import type { ChatRole } from "@/models/chat-message.ts";
+import type { ChatAttachment, ChatRole } from "@/models/chat-message.ts";
 import type { Lecture } from "@/models/lecture.ts";
 import * as storage from "@/services/storage.ts";
 
 import { subjectCourseList } from "./catalog.ts";
-import { chat, type OllamaMessage } from "./client.ts";
+import { chatStream, type OllamaMessage } from "./client.ts";
+import { readChatDocument } from "./documents.ts";
 import { PROMPT_CHAT } from "./prompts.ts";
 
-export type ChatReplyInput = {
+type ChatReplyInput = {
 	lecture: Lecture;
-	history: Array<{ role: ChatRole; content: string }>;
-	userText: string;
-	imagePaths: string[];
+	history: Array<{ role: ChatRole; content: string; attachments?: ChatAttachment[] | null }>;
 };
 
 function encodeBase64(bytes: Uint8Array): string {
@@ -32,11 +31,35 @@ async function readFiche(lectureId: string): Promise<string> {
 	}
 }
 
-export async function reply(input: ChatReplyInput): Promise<string> {
+async function withDocuments(
+	lectureId: string,
+	content: string,
+	attachments?: ChatAttachment[] | null,
+): Promise<string> {
+	const docs = (attachments || []).filter(
+		(item): item is ChatAttachment & { kind: "pdf" | "text" } => item.kind === "pdf" || item.kind === "text",
+	);
+	if (docs.length === 0) return content;
+
+	const blocks = await Promise.all(docs.map(async (doc) => {
+		const text = doc.text ??
+			await readChatDocument(storage.chatFilePath(lectureId, doc.path), doc.kind).catch(() => "");
+		return `## Document : ${doc.name || doc.path}\n${text || "(fichier vide)"}`;
+	}));
+
+	return [content, ...blocks].filter(Boolean).join("\n\n");
+}
+
+async function buildMessages(input: ChatReplyInput): Promise<{
+	messages: OllamaMessage[];
+	model: string;
+}> {
+	const lectureId = input.lecture.id;
 	const [fiche, courses] = await Promise.all([
-		readFiche(input.lecture.id),
+		readFiche(lectureId),
 		subjectCourseList(input.lecture),
 	]);
+
 	const messages: OllamaMessage[] = [
 		{
 			role: "system",
@@ -46,24 +69,33 @@ export async function reply(input: ChatReplyInput): Promise<string> {
 				fiche ? `## Fiche du cours\n${fiche}` : "",
 			].filter(Boolean).join("\n\n"),
 		},
-		...input.history.map((item) => ({ role: item.role, content: item.content })),
+		...await Promise.all(input.history.map(async (item) => ({
+			role: item.role,
+			content: item.role === "user"
+				? await withDocuments(lectureId, item.content, item.attachments)
+				: item.content,
+		}))),
 	];
 
-	const last = messages.at(-1);
-	if (!last || last.role !== "user") {
-		messages.push({ role: "user", content: input.userText });
-	}
-
-	if (input.imagePaths.length > 0) {
-		const images = await Promise.all(
-			input.imagePaths.map(async (path) => encodeBase64(await Deno.readFile(path))),
-		);
+	const images = (input.history.at(-1)?.attachments || []).filter((item) => item.kind === "image");
+	if (images.length > 0) {
 		const user = messages.at(-1);
-		if (user && user.role === "user") user.images = images;
+		if (user && user.role === "user") {
+			user.images = await Promise.all(
+				images.map(async (item) =>
+					encodeBase64(await Deno.readFile(storage.chatFilePath(lectureId, item.path)))
+				),
+			);
+		}
 	}
 
-	const model = input.imagePaths.length > 0 ? config.ollamaVisionModel : config.ollamaChatModel;
-	const text = await chat(messages, { model });
-	if (!text) throw new Error("empty_reply");
-	return text;
+	return {
+		messages,
+		model: images.length > 0 ? config.ollamaVisionModel : config.ollamaChatModel,
+	};
+}
+
+export async function* replyStream(input: ChatReplyInput): AsyncGenerator<string> {
+	const { messages, model } = await buildMessages(input);
+	yield* chatStream(messages, { model, temperature: 0.5 });
 }
