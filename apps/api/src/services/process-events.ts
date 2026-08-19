@@ -54,9 +54,13 @@ export function followProcess(
 	lectureId: string,
 	onEvent: (event: ProcessEvent) => void,
 	signal: AbortSignal,
+	fallbackStage?: ProcessStage | null,
 ): Promise<void> {
 	const hub = hubs.get(lectureId);
 	if (!hub) {
+		if (fallbackStage) {
+			onEvent({ type: "init", stage: fallbackStage, preview: "" });
+		}
 		onEvent({ type: "idle" });
 		return Promise.resolve();
 	}

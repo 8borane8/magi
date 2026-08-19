@@ -77,7 +77,7 @@ export async function classify(lectureId: string): Promise<void> {
 				].join("\n\n"),
 			},
 		],
-		{ format: "json", temperature: 0.2 },
+		{ format: "json", temperature: 0.2, numPredict: 256 },
 	);
 
 	const payload = JSON.parse(raw) as ClassifyPayload;

@@ -10,6 +10,8 @@ export type ChatOptions = {
 	model?: string;
 	format?: "json";
 	temperature?: number;
+	numPredict?: number;
+	think?: boolean;
 };
 
 type OllamaChatResponse = {
@@ -54,6 +56,10 @@ export async function* chatStream(
 	const model = options.model || config.ollamaChatModel;
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), config.ollamaTimeoutMs);
+	const sampling = {
+		...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+		...(options.numPredict !== undefined ? { num_predict: options.numPredict } : {}),
+	};
 
 	try {
 		const response = await fetch(`${config.ollamaUrl.replace(/\/+$/, "")}/api/chat`, {
@@ -63,8 +69,9 @@ export async function* chatStream(
 				model,
 				messages,
 				stream: true,
+				think: options.think ?? false,
 				...(options.format ? { format: options.format } : {}),
-				...(options.temperature !== undefined ? { options: { temperature: options.temperature } } : {}),
+				...(Object.keys(sampling).length > 0 ? { options: sampling } : {}),
 			}),
 			signal: controller.signal,
 		});

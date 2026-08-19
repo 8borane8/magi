@@ -9,6 +9,7 @@ import { createClient, nodeUrl, type ProcessStreamEvent, watchLectureProcess } f
 import { recordSession } from "../../utils/record-session.ts";
 import { formatDuration, lectureTitle, STATUS_LABEL } from "../../utils/lecture-format.ts";
 import { readHomeQueryFromBrowser, writeHomeQuery } from "../../utils/home-query.ts";
+import { sleep } from "../../utils/ndjson.ts";
 import { type ProcessStage, SessionStatus } from "@magi/shared/types/session";
 
 type SubjectItem = { id: string; name: string; color: string };
@@ -27,6 +28,7 @@ type LectureRow = {
 type ProcessView = {
 	stage: string;
 	preview: string;
+	stageAt: number;
 };
 
 const STAGE_LABEL: Record<string, string> = {
@@ -116,14 +118,18 @@ function applyProcessEvent(
 	id: string,
 	event: ProcessStreamEvent,
 ): Record<string, ProcessView> | null {
-	const prev = current[id] || { stage: "transcribe", preview: "" };
+	const prev = current[id] || { stage: "transcribe", preview: "", stageAt: 0 };
 	if (event.type === "init") {
-		return { ...current, [id]: { stage: event.stage, preview: event.preview } };
+		return { ...current, [id]: { stage: event.stage, preview: event.preview, stageAt: prev.stageAt } };
 	}
 	if (event.type === "stage") {
 		return {
 			...current,
-			[id]: { ...prev, stage: event.stage, preview: event.stage === "fiche" ? prev.preview : "" },
+			[id]: {
+				stage: event.stage,
+				preview: event.stage === "fiche" ? prev.preview : "",
+				stageAt: Date.now(),
+			},
 		};
 	}
 	if (event.type === "delta") {
@@ -204,7 +210,11 @@ export default function Home({
 			}
 			subjects.value = subjectsRes.data;
 			tags.value = tagsRes.data;
-			lectures.value = lecturesRes.data;
+			lectures.value = lecturesRes.data.map((row) => {
+				const live = processById.value[row.id];
+				if (!live || row.status !== SessionStatus.PROCESSING) return row;
+				return { ...row, processStage: live.stage as ProcessStage };
+			});
 		} catch {
 			error.value = "Impossible de charger le catalogue.";
 		}
@@ -234,29 +244,39 @@ export default function Home({
 			if (watching.current.has(id)) continue;
 			const ac = new AbortController();
 			watching.current.set(id, ac);
-			void watchLectureProcess(id, (event) => {
-				if (event.type === "init") {
-					lectures.value = lectures.value.map((row) =>
-						row.id === id ? { ...row, processStage: event.stage as ProcessStage } : row
-					);
+			void (async () => {
+				while (!ac.signal.aborted) {
+					await watchLectureProcess(id, (event) => {
+						if (event.type === "init") {
+							lectures.value = lectures.value.map((row) =>
+								row.id === id ? { ...row, processStage: event.stage as ProcessStage } : row
+							);
+						}
+						if (event.type === "stage") {
+							lectures.value = lectures.value.map((row) =>
+								row.id === id && row.processStage !== event.stage
+									? {
+										...row,
+										processStage: event.stage as ProcessStage,
+										updatedAt: new Date().toISOString(),
+									}
+									: row
+							);
+						}
+						const next = applyProcessEvent(processById.value, id, event);
+						if (next) processById.value = next;
+					}, ac.signal);
+					if (ac.signal.aborted) return;
+					await load();
+					const row = lectures.value.find((item) => item.id === id);
+					if (row?.status !== SessionStatus.PROCESSING) {
+						const { [id]: _dropped, ...rest } = processById.value;
+						processById.value = rest;
+						return;
+					}
+					await sleep(500, ac.signal);
 				}
-				if (event.type === "stage") {
-					lectures.value = lectures.value.map((row) =>
-						row.id === id && row.processStage !== event.stage
-							? {
-								...row,
-								processStage: event.stage as ProcessStage,
-								updatedAt: new Date().toISOString(),
-							}
-							: row
-					);
-				}
-				const next = applyProcessEvent(processById.value, id, event);
-				if (next) processById.value = next;
-			}, ac.signal).finally(() => {
-				watching.current.delete(id);
-				if (!ac.signal.aborted) void load();
-			});
+			})();
 		}
 	}, [treatingIds]);
 
@@ -428,7 +448,7 @@ export default function Home({
 		if (row.status === SessionStatus.PROCESSING) {
 			const progress = processById.value[row.id];
 			const stage = progress?.stage || row.processStage || "";
-			const startedAt = new Date(row.updatedAt || row.createdAt).getTime();
+			const startedAt = progress?.stageAt || new Date(row.updatedAt || row.createdAt).getTime();
 			return (
 				<div class="lecture-row" aria-current={selected ? "true" : undefined}>
 					{inner}

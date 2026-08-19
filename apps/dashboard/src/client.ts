@@ -84,7 +84,10 @@ async function readLive<T extends LiveEvent>(
 
 	while (!signal?.aborted) {
 		try {
-			const response = await fetch(`${url}${path}`, { signal });
+			const response = await fetch(`${url}${path}`, {
+				signal,
+				cache: "no-store",
+			});
 			if (!response.ok) throw new Error("live_failed");
 			let terminal = false;
 			for await (const event of readNdjson<T>(response)) {

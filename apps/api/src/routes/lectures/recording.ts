@@ -23,7 +23,8 @@ async function hasTranscript(lectureId: string): Promise<boolean> {
 
 async function markStage(lecture: Lecture, stage: ProcessStage): Promise<void> {
 	if (lecture.processStage !== stage) {
-		await lecture.update({ processStage: stage });
+		await Lecture.update({ processStage: stage }, { where: { id: lecture.id } });
+		lecture.processStage = stage;
 	}
 	processEvents.setStage(lecture.id, stage);
 }

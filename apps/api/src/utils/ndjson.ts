@@ -43,6 +43,7 @@ export function sendNdjson(
 
 	return res
 		.setHeader("Content-Type", "application/x-ndjson")
-		.setHeader("Cache-Control", "no-cache")
+		.setHeader("Cache-Control", "no-store")
+		.setHeader("X-Accel-Buffering", "no")
 		.send(stream);
 }

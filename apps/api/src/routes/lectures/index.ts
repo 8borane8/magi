@@ -95,9 +95,13 @@ export default new Router()
 			data: req.data.lecture.toJSON(),
 		});
 	})
-	.get("/:lectureId/wait", (req, res) => {
-		const lectureId = req.data.lecture.id;
-		return sendNdjson(res, (send, signal) => processEvents.followProcess(lectureId, send, signal));
+	.get("/:lectureId/wait", async (req, res) => {
+		await req.data.lecture.reload();
+		const lecture = req.data.lecture;
+		return sendNdjson(
+			res,
+			(send, signal) => processEvents.followProcess(lecture.id, send, signal, lecture.processStage),
+		);
 	})
 	.patch(
 		"/:lectureId",
