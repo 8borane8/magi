@@ -80,10 +80,37 @@ function langLabel(lang: string): string {
 	return names[lang] ?? lang[0]!.toUpperCase() + lang.slice(1);
 }
 
+function earliest(src: string, needles: string[]): number | undefined {
+	let best = -1;
+	for (const needle of needles) {
+		const index = src.indexOf(needle);
+		if (index >= 0 && (best < 0 || index < best)) best = index;
+	}
+	return best < 0 ? undefined : best;
+}
+
+const MERMAID_LANG = new Set(["mermaid", "mmd"]);
+const MERMAID_START =
+	/^(?:%%\{[\s\S]*?\}%%\s*|%%[^\n]*\n)*\s*(?:flowchart(?:\s+(?:TD|TB|BT|RL|LR))?|graph\s+(?:TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram(?:-v2)?|stateDiagram(?:-v2)?|erDiagram|mindmap|timeline|gitGraph|pie(?:\s+showData)?|gantt|journey|quadrantChart|sankey(?:-beta)?|xychart(?:-beta)?|block(?:-beta)?|C4Context|requirementDiagram|packet(?:-beta)?|kanban|architecture(?:-beta)?)\b/;
+
+function mermaidSource(text: string): string {
+	return text.trim().replace(/^mermaid\s*\r?\n/i, "").trim();
+}
+
+function isMermaidFence(language: string, source: string): boolean {
+	if (MERMAID_LANG.has(language)) return true;
+	if (language && language !== "text" && language !== "txt" && language !== "plain") return false;
+	return MERMAID_START.test(source);
+}
+
 function highlightCode(text: string, lang: string | undefined): string {
 	const language = lang?.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
-	if (language === "mermaid") {
-		return `<figure class="diagram" data-definition="${escapeHtml(text.trim())}"></figure>\n`;
+	const source = mermaidSource(text);
+	if (isMermaidFence(language, source)) {
+		return `<figure class="diagram" data-definition="${escapeHtml(source)}"></figure>\n`;
+	}
+	if (language === "latex" || language === "tex" || language === "math" || language === "katex") {
+		return renderTex(text, true);
 	}
 
 	let html = escapeHtml(text);
@@ -189,17 +216,17 @@ marked.use({
 			name: "mathBlock",
 			level: "block",
 			start(src) {
-				const index = src.indexOf("$$");
-				return index < 0 ? undefined : index;
+				return earliest(src, ["$$", "\\["]);
 			},
 			tokenizer(src) {
-				const match = /^\$\$[ \t]*\n?([\s\S]+?)\n?\$\$/.exec(src);
-				if (!match) return;
-				return {
-					type: "mathBlock",
-					raw: match[0],
-					text: match[1] ?? "",
-				};
+				const dollars = /^\$\$[ \t]*\n?([\s\S]+?)\n?\$\$/.exec(src);
+				if (dollars) {
+					return { type: "mathBlock", raw: dollars[0], text: dollars[1] ?? "" };
+				}
+				const brackets = /^\\\[[ \t]*\n?([\s\S]+?)\n?\\\]/.exec(src);
+				if (brackets) {
+					return { type: "mathBlock", raw: brackets[0], text: brackets[1] ?? "" };
+				}
 			},
 			renderer(token) {
 				return renderTex(String((token as unknown as { text: string }).text), true);
@@ -209,18 +236,22 @@ marked.use({
 			name: "mathInline",
 			level: "inline",
 			start(src) {
-				const index = src.indexOf("$");
-				return index < 0 ? undefined : index;
+				return earliest(src, ["$", "\\(", "\\["]);
 			},
 			tokenizer(src) {
 				if (src.startsWith("$$")) return;
-				const match = /^\$([^$\n]+?)\$/.exec(src);
-				if (!match) return;
-				return {
-					type: "mathInline",
-					raw: match[0],
-					text: match[1] ?? "",
-				};
+				const dollars = /^\$([^$\n]+?)\$/.exec(src);
+				if (dollars) {
+					return { type: "mathInline", raw: dollars[0], text: dollars[1] ?? "" };
+				}
+				const parens = /^\\\(([\s\S]+?)\\\)/.exec(src);
+				if (parens) {
+					return { type: "mathInline", raw: parens[0], text: parens[1] ?? "" };
+				}
+				const brackets = /^\\\[[ \t]*\n?([\s\S]+?)\n?\\\]/.exec(src);
+				if (brackets) {
+					return { type: "mathBlock", raw: brackets[0], text: brackets[1] ?? "" };
+				}
 			},
 			renderer(token) {
 				return renderTex(String((token as unknown as { text: string }).text), false);

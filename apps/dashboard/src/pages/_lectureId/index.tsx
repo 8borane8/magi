@@ -5,7 +5,7 @@ import { lectureTitle } from "../../utils/lecture-format.ts";
 import LectureAudio from "../../islands/app/_lectureId/audio.tsx";
 import LectureChat from "../../islands/app/_lectureId/chat.tsx";
 import LectureHeader from "../../islands/app/_lectureId/lecture-header.tsx";
-import { createClient, nodeUrl } from "../../client.ts";
+import { createClient, nodeUrl, resolveNodeUrl } from "../../client.ts";
 
 export default {
 	url: "/l/:lectureId",
@@ -62,10 +62,11 @@ export default {
 	onrequest: async (req, res) => {
 		const lectureId = req.params.lectureId!;
 		const client = createClient(req.cookies.nodeUrl);
+		const apiUrl = resolveNodeUrl(req.cookies.nodeUrl);
 
 		const [lectureRes, resumeRes, chatRes] = await Promise.all([
 			client.get("/lectures/:lectureId", { params: { lectureId } }),
-			fetch(`${client.baseUrl}/lectures/${encodeURIComponent(lectureId)}/data/resume`)
+			fetch(`${apiUrl}/lectures/${encodeURIComponent(lectureId)}/data/resume`)
 				.catch(() => null),
 			client.get("/lectures/:lectureId/chat", { params: { lectureId } }),
 		]);

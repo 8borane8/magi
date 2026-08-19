@@ -83,7 +83,8 @@ export async function classify(lectureId: string): Promise<void> {
 	);
 
 	const payload = parseJson(raw);
-	const title = asName(payload.title).slice(0, 300);
+	const title = asName(payload.title).slice(0, 80);
+	if (!title) throw new Error("classify_missing_title");
 	const subjectName = asName(payload.subject);
 	const tagNames = [...new Map(
 		(Array.isArray(payload.tags) ? payload.tags : [])
@@ -97,7 +98,7 @@ export async function classify(lectureId: string): Promise<void> {
 		lecture.subjectId = subject.id;
 	}
 
-	if (title) lecture.title = title;
+	lecture.title = title;
 	await lecture.save();
 
 	if (tagNames.length === 0) return;

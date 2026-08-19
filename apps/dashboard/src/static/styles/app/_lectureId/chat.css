@@ -114,6 +114,7 @@
 }
 
 #lecture-chat > ol > li {
+	min-width: 0;
 	max-width: 90%;
 
 	color: var(--color-text);
@@ -122,7 +123,7 @@
 	font-weight: 400;
 	line-height: 1.55;
 
-	overflow-wrap: anywhere;
+	overflow-wrap: break-word;
 
 	display: flex;
 	flex-direction: column;
@@ -198,6 +199,15 @@
 #lecture-chat > ol > li > .markdown li {
 	font-size: inherit;
 	line-height: inherit;
+}
+
+#lecture-chat > ol > li[data-role="assistant"]:has(.diagram) {
+	max-width: 100%;
+}
+
+#lecture-chat > ol > li > .markdown .diagram {
+	overflow-wrap: normal;
+	word-break: normal;
 }
 
 #lecture-chat > ol > li[data-role="user"] > ul {

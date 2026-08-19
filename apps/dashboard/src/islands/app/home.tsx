@@ -11,24 +11,16 @@ import { formatDuration, lectureTitle, STATUS_LABEL } from "../../utils/lecture-
 import { readHomeQueryFromBrowser, writeHomeQuery } from "../../utils/home-query.ts";
 import { SessionStatus } from "@magi/shared/types/session";
 
-type Client = ReturnType<typeof createClient>;
-
-function loadSubjects(client: Client) {
-	return client.get("/subjects");
-}
-
-function loadTags(client: Client) {
-	return client.get("/tags");
-}
-
-function loadLectures(client: Client) {
-	return client.get("/lectures", { query: { limit: 1, page: 1 } });
-}
-
-type SubjectItem = Extract<Awaited<ReturnType<typeof loadSubjects>>, { success: true }>["data"]["items"][number];
-type TagItem = Extract<Awaited<ReturnType<typeof loadTags>>, { success: true }>["data"]["items"][number];
-type LectureRow = Extract<Awaited<ReturnType<typeof loadLectures>>, { success: true }>["data"]["rows"][number] & {
-	tags?: Pick<TagItem, "id" | "name" | "color">[];
+type SubjectItem = { id: string; name: string; color: string };
+type TagItem = { id: string; name: string; color: string };
+type LectureRow = {
+	id: string;
+	title: string | null;
+	createdAt: string | Date;
+	subjectId: string | null;
+	status: SessionStatus;
+	audioMs: number;
+	tags?: TagItem[];
 };
 
 function liveRow(lecture: LectureRow): LectureRow {

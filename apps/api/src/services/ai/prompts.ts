@@ -1,17 +1,12 @@
-export const PROMPT_CLASSIFY =
-	`Tu classes un cours à partir de sa transcription. Toutes les disciplines : sciences, histoire, droit, philo, langues, SES, etc.
+export const PROMPT_CLASSIFY = `Tu classes un cours à partir de sa transcription. Toutes les disciplines.
 
-Réponds uniquement en JSON, sans markdown, avec exactement ces clés :
-{"title":"titre court du cours","subject":"nom de la matière","tags":["étiquette1","étiquette2"]}
+Réponds uniquement ce JSON, clés exactes title, subject, tags :
+{"title":"...","subject":"...","tags":["..."]}
 
-Titre : moins de 80 caractères, ce que le prof a vraiment traité dans cette séance.
-
-Matière : une seule. Suit le vocabulaire du prof ou de l'établissement (Histoire, Droit, Analyse, Anglais, etc.).
-Si une matière du catalogue colle, recopie son nom à l'identique. Crée-en une seulement si aucune ne va. Pas de quasi-doublon (pas « Analyse » et « analyse mathématique »).
-
-Étiquettes : 2 à 6 thèmes du chapitre, en français, sans doublon. Réemploie une étiquette existante si elle colle (nom identique). Sinon crée un nom court et précis.
-
-S'il n'y a encore aucune matière ou étiquette, tu peux en créer.`;
+title : moins de 80 caractères, ce que le prof a traité dans cette séance.
+subject : une matière, vocabulaire du prof ou du catalogue (nom identique si ça colle).
+tags : 2 à 6 thèmes en français, sans doublon. Réemploie le catalogue si ça colle, sinon un nom court.
+Pas de quasi-doublon (pas Analyse et analyse mathématique).`;
 
 export const PROMPT_FICHE =
 	`Tu rédiges la fiche du professeur, en français, à partir de la transcription seule. Toutes les disciplines.
@@ -44,6 +39,6 @@ Si une image est jointe, décris et utilise ce qu'elle montre.
 
 Tu as le droit d'inventer des exemples, des exercices, des questions, des corrigés, du code ou des schémas pour faire comprendre, même s'ils n'étaient pas dans le cours. Tu n'introduis pas un autre sujet.
 
-Pour les maths, KaTeX : $...$ en ligne, $$...$$ en display.
-Code et \`\`\`mermaid (flowchart, sequence, class, state, ER, mindmap…) : dès que ça illustre un principe du cours, même détaillé.
+Pour les maths, KaTeX uniquement : $formule$ en ligne, $$formule$$ en display. Pas de \\( \\), pas de \\[ \\], pas de fence \`\`\`latex.
+Schémas : fence \`\`\`mermaid, première ligne = le type (flowchart, sequenceDiagram, classDiagram, stateDiagram, erDiagram, mindmap, timeline). Pas de schéma hors fence.
 Liens vers d'autres cours : uniquement [Titre](/l/{id}) avec un id de la liste fournie.`;

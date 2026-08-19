@@ -11,12 +11,21 @@ function isLive(status: SessionStatus): boolean {
 	return [SessionStatus.RECORDING, SessionStatus.PAUSED].includes(status);
 }
 
+async function hasTranscript(lectureId: string): Promise<boolean> {
+	try {
+		const text = await Deno.readTextFile(storage.transcriptPath(lectureId));
+		return Boolean(text.trim());
+	} catch {
+		return false;
+	}
+}
+
 async function processLecture(lectureId: string): Promise<void> {
 	const lecture = await Lecture.findByPk(lectureId);
 	if (!lecture) return;
 
 	try {
-		await ai.transcribe(lectureId);
+		if (!await hasTranscript(lectureId)) await ai.transcribe(lectureId);
 		await ai.classify(lectureId);
 		await ai.writeFiche(lectureId);
 		await lecture.update({ status: SessionStatus.COMPLETED });

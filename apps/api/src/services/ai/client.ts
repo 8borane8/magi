@@ -21,7 +21,7 @@ export async function chat(messages: OllamaMessage[], options: ChatOptions = {})
 	const model = options.model || config.ollamaChatModel;
 
 	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), 180_000);
+	const timer = setTimeout(() => controller.abort(), 360_000);
 
 	try {
 		const response = await fetch(`${config.ollamaUrl.replace(/\/+$/, "")}/api/chat`, {
@@ -44,6 +44,11 @@ export async function chat(messages: OllamaMessage[], options: ChatOptions = {})
 		const data = await response.json() as OllamaChatResponse;
 		if (data.error) throw new Error(data.error);
 		return data.message?.content?.trim() || "";
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			throw new Error("ollama_timeout");
+		}
+		throw error;
 	} finally {
 		clearTimeout(timer);
 	}

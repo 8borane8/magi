@@ -1,20 +1,16 @@
+import mermaid from "mermaid";
 import { useEffect, useMemo, useRef } from "preact/hooks";
 
 import { renderMarkdown } from "../utils/markdown.ts";
 
-type Mermaid = {
-	initialize: (config: Record<string, unknown>) => void;
-	render: (id: string, text: string) => Promise<{ svg: string }>;
-};
+let mermaidReady = false;
+let mermaidSeq = 0;
 
-let mermaidMod: Mermaid | undefined;
-
-async function loadMermaid(): Promise<Mermaid> {
-	if (mermaidMod) return mermaidMod;
-	const mod = await import("mermaid/dist/mermaid.esm.min.mjs");
-	const mermaid = (mod.default ?? mod) as Mermaid;
+function setupMermaid(): void {
+	if (mermaidReady) return;
 	mermaid.initialize({
 		startOnLoad: false,
+		suppressErrorRendering: true,
 		securityLevel: "loose",
 		theme: "base",
 		fontFamily: getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() ||
@@ -35,8 +31,7 @@ async function loadMermaid(): Promise<Mermaid> {
 			messageMargin: 40,
 		},
 	});
-	mermaidMod = mermaid;
-	return mermaid;
+	mermaidReady = true;
 }
 
 function adoptTheme(svg: Element): void {
@@ -64,22 +59,45 @@ async function copyCode(button: HTMLButtonElement): Promise<void> {
 	}, 1500);
 }
 
+function removeMermaidTemp(id: string): void {
+	document.getElementById(id)?.remove();
+	document.getElementById(`d${id}`)?.remove();
+	document.getElementById(`i${id}`)?.remove();
+}
+
+function showDiagramSource(figure: HTMLElement, definition: string): void {
+	figure.className = "code-block";
+	figure.removeAttribute("data-definition");
+	const caption = document.createElement("figcaption");
+	const label = document.createElement("span");
+	label.textContent = "Mermaid";
+	caption.append(label);
+	const pre = document.createElement("pre");
+	const code = document.createElement("code");
+	code.textContent = definition;
+	pre.append(code);
+	figure.replaceChildren(caption, pre);
+}
+
 async function renderDiagrams(root: HTMLElement): Promise<void> {
 	const figures = [...root.querySelectorAll<HTMLElement>("figure.diagram[data-definition]")];
 	if (figures.length === 0) return;
 
-	const mermaid = await loadMermaid();
-	for (const [index, figure] of figures.entries()) {
+	setupMermaid();
+	for (const figure of figures) {
 		if (figure.querySelector("svg")) continue;
 		const definition = figure.dataset.definition?.trim();
 		if (!definition) continue;
+		const id = `mmd${++mermaidSeq}`;
 		try {
-			const { svg } = await mermaid.render(`mmd${index}${Math.random().toString(36).slice(2, 8)}`, definition);
+			const { svg } = await mermaid.render(id, definition);
 			figure.innerHTML = svg;
 			const drawn = figure.querySelector("svg");
 			if (drawn) adoptTheme(drawn);
-		} catch (error) {
-			console.error(error);
+		} catch {
+			showDiagramSource(figure, definition);
+		} finally {
+			removeMermaidTemp(id);
 		}
 	}
 }

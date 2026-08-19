@@ -25,8 +25,8 @@ export function nodeUrl(cookie?: string | null): string | undefined {
 	return raw?.replace(/\/+$/, "") || undefined;
 }
 
-export function createClient(baseUrl?: string): MagiClient {
-	let url = nodeUrl(baseUrl);
+export function resolveNodeUrl(cookie?: string | null): string {
+	let url = nodeUrl(cookie);
 	if (!url) throw new Error("No node URL found.");
 
 	if (typeof document === "undefined") {
@@ -44,7 +44,11 @@ export function createClient(baseUrl?: string): MagiClient {
 		}
 	}
 
-	return new HttpClient<AppRouter>({ baseUrl: url });
+	return url;
+}
+
+export function createClient(baseUrl?: string): MagiClient {
+	return new HttpClient<AppRouter>({ baseUrl: resolveNodeUrl(baseUrl) });
 }
 
 export async function waitLecture(lectureId: string, signal?: AbortSignal): Promise<void> {
