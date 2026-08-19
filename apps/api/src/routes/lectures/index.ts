@@ -22,9 +22,6 @@ export default new Router()
 		async (req, res) => {
 			const { q, status, subjectId, tagId, from, to } = req.query;
 			const limit = req.query.limit || 50;
-			const page = req.query.page || 1;
-			const offset = (page - 1) * limit;
-
 			const where: WhereOptions<Lecture> = {};
 
 			if (status) where.status = status;
@@ -48,17 +45,18 @@ export default new Router()
 			}
 
 			if (tagId) {
-				const links = await LectureTag.findAll({ where: { tagId }, attributes: ["lectureId"] });
-				where.id = { [Op.in]: links.map((link) => link.lectureId) };
+				where.id = {
+					[Op.in]: Lecture.sequelize!.literal(
+						`(SELECT lectureId FROM "${LectureTag.tableName}" WHERE tagId = '${tagId}')`,
+					),
+				};
 			}
 
-			const { rows } = await Lecture.findAndCountAll({
+			const rows = await Lecture.findAll({
 				where,
 				include: withRelations,
 				order: [["createdAt", "DESC"]],
-				distinct: true,
 				limit,
-				offset,
 			});
 
 			return res.json({
@@ -76,15 +74,12 @@ export default new Router()
 				from: z.optional(z.string()),
 				to: z.optional(z.string()),
 				limit: z.optional(z.number().int().min(1).max(200)),
-				page: z.optional(z.number().int().min(1)),
 			}),
 		},
 	)
 	.post("/", async (_req, res) => {
 		const lecture = await Lecture.create();
-
 		await storage.ensureLectureDir(lecture.id);
-		recording.armStalePause(lecture.id);
 
 		return res.json({
 			success: true,
@@ -102,10 +97,7 @@ export default new Router()
 	})
 	.get("/:lectureId/wait", (req, res) => {
 		const lectureId = req.data.lecture.id;
-		return sendNdjson(
-			res,
-			(send, signal) => processEvents.followProcess(lectureId, send, recording.whenProcessed(lectureId), signal),
-		);
+		return sendNdjson(res, (send, signal) => processEvents.followProcess(lectureId, send, signal));
 	})
 	.patch(
 		"/:lectureId",
@@ -137,7 +129,6 @@ export default new Router()
 		const lecture = req.data.lecture;
 
 		await recording.withLectureLock(lecture.id, async () => {
-			recording.clearStalePause(lecture.id);
 			await storage.removeLectureDir(lecture.id);
 			await lecture.destroy();
 		});

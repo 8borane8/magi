@@ -1,5 +1,7 @@
 import type { HttpResponse } from "@webtools/expressapi";
 
+const OPEN = `${" ".repeat(4096)}\n`;
+
 export function sendNdjson(
 	res: HttpResponse,
 	run: (send: (obj: unknown) => void, signal: AbortSignal) => Promise<void>,
@@ -8,10 +10,13 @@ export function sendNdjson(
 	const abort = new AbortController();
 	const stream = new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let opened = false;
 			const send = (obj: unknown) => {
 				if (abort.signal.aborted) return;
 				try {
-					controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+					const line = `${JSON.stringify(obj)}\n`;
+					controller.enqueue(encoder.encode(opened ? line : `${OPEN}${line}`));
+					opened = true;
 				} catch {
 					abort.abort();
 				}

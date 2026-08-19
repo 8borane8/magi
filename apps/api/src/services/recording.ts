@@ -5,7 +5,6 @@ import { config } from "@/config.ts";
 import * as storage from "@/services/storage.ts";
 
 const queues = new Map<string, Promise<unknown>>();
-const staleTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const jobs = new Map<string, Promise<void>>();
 
 export function withLectureLock<T>(lectureId: string, task: () => Promise<T>): Promise<T> {
@@ -23,65 +22,45 @@ export function withLectureLock<T>(lectureId: string, task: () => Promise<T>): P
 
 export function runProcess(lectureId: string, task: () => Promise<void>): void {
 	if (jobs.has(lectureId)) return;
-	const run = task();
+	const run = Promise.resolve().then(task);
 	jobs.set(lectureId, run);
 	void run.finally(() => {
 		if (jobs.get(lectureId) === run) jobs.delete(lectureId);
 	});
 }
 
-export function whenProcessed(lectureId: string): Promise<void> {
-	return jobs.get(lectureId) || Promise.resolve();
-}
-
-export function clearStalePause(lectureId: string): void {
-	const timer = staleTimers.get(lectureId);
-	if (!timer) return;
-	clearTimeout(timer);
-	staleTimers.delete(lectureId);
-}
-
-function staleRemainingMs(lecture: Lecture): number {
+function isStale(lecture: Lecture): boolean {
 	const ref = lecture.lastChunkAt || lecture.createdAt;
-	return config.staleChunkMs - (Date.now() - ref.getTime());
+	return Date.now() - ref.getTime() >= config.staleChunkMs;
 }
 
-export function armStalePause(lectureId: string, delayMs: number = config.staleChunkMs): void {
-	clearStalePause(lectureId);
-	const timer = setTimeout(() => {
-		staleTimers.delete(lectureId);
-		void pauseIfStale(lectureId).catch((error) => console.error(error));
-	}, delayMs);
-	Deno.unrefTimer(timer);
-	staleTimers.set(lectureId, timer);
-}
-
-export async function failStaleProcessing(): Promise<void> {
-	await Lecture.update({ status: SessionStatus.FAILED }, { where: { status: SessionStatus.PROCESSING } });
-}
-
-export async function resumeStaleWatch(): Promise<void> {
+async function pauseStaleRecordings(): Promise<void> {
 	const live = await Lecture.findAll({ where: { status: SessionStatus.RECORDING } });
 	for (const lecture of live) {
-		armStalePause(lecture.id, Math.max(0, staleRemainingMs(lecture)));
+		if (!isStale(lecture)) continue;
+		await withLectureLock(lecture.id, async () => {
+			await lecture.reload();
+			if (lecture.status !== SessionStatus.RECORDING || !isStale(lecture)) return;
+			storage.closeLectureFiles(lecture.id);
+			lecture.status = SessionStatus.PAUSED;
+			await lecture.save();
+		});
 	}
 }
 
-function pauseIfStale(lectureId: string): Promise<void> {
-	return withLectureLock(lectureId, async () => {
-		const lecture = await Lecture.findByPk(lectureId);
-		if (!lecture || lecture.status !== SessionStatus.RECORDING) return;
+export async function failStaleProcessing(): Promise<void> {
+	await Lecture.update({
+		status: SessionStatus.FAILED,
+		processStage: null,
+	}, { where: { status: SessionStatus.PROCESSING } });
+}
 
-		const remaining = staleRemainingMs(lecture);
-		if (remaining > 0) {
-			armStalePause(lectureId, remaining);
-			return;
-		}
-
-		storage.closeLectureFiles(lecture.id);
-		lecture.status = SessionStatus.PAUSED;
-		await lecture.save();
-	});
+export function startStaleWatch(): void {
+	void pauseStaleRecordings().catch((error) => console.error(error));
+	const timer = setInterval(() => {
+		void pauseStaleRecordings().catch((error) => console.error(error));
+	}, 5_000);
+	Deno.unrefTimer(timer);
 }
 
 type IngestResult =
@@ -114,10 +93,7 @@ export function ingestChunk(
 		lecture.audioBytes += payload.byteLength;
 		lecture.lastChunkAt = new Date();
 
-		const live = lecture.status === SessionStatus.RECORDING;
 		await lecture.save();
-		if (live) armStalePause(lectureId);
-
 		return { kind: "ok" };
 	});
 }

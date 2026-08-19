@@ -9,7 +9,7 @@ import { createClient, nodeUrl, type ProcessStreamEvent, watchLectureProcess } f
 import { recordSession } from "../../utils/record-session.ts";
 import { formatDuration, lectureTitle, STATUS_LABEL } from "../../utils/lecture-format.ts";
 import { readHomeQueryFromBrowser, writeHomeQuery } from "../../utils/home-query.ts";
-import { SessionStatus } from "@magi/shared/types/session";
+import { type ProcessStage, SessionStatus } from "@magi/shared/types/session";
 
 type SubjectItem = { id: string; name: string; color: string };
 type TagItem = { id: string; name: string; color: string };
@@ -17,15 +17,16 @@ type LectureRow = {
 	id: string;
 	title: string | null;
 	createdAt: string | Date;
+	updatedAt?: string | Date;
 	subjectId: string | null;
 	status: SessionStatus;
+	processStage?: ProcessStage | null;
 	audioMs: number;
 	tags?: TagItem[];
 };
 type ProcessView = {
 	stage: string;
 	preview: string;
-	startedAt: number;
 };
 
 const STAGE_LABEL: Record<string, string> = {
@@ -115,9 +116,9 @@ function applyProcessEvent(
 	id: string,
 	event: ProcessStreamEvent,
 ): Record<string, ProcessView> | null {
-	const prev = current[id] || { stage: "transcribe", preview: "", startedAt: Date.now() };
+	const prev = current[id] || { stage: "transcribe", preview: "" };
 	if (event.type === "init") {
-		return { ...current, [id]: { stage: event.stage, preview: event.preview, startedAt: event.startedAt } };
+		return { ...current, [id]: { stage: event.stage, preview: event.preview } };
 	}
 	if (event.type === "stage") {
 		return {
@@ -195,7 +196,6 @@ export default function Home({
 						from: filters.value.from || undefined,
 						to: filters.value.to || undefined,
 						limit: 200,
-						page: 1,
 					},
 				}),
 			]);
@@ -222,22 +222,38 @@ export default function Home({
 	}, [treatingIds]);
 
 	useEffect(() => {
-		if (!treatingIds) return;
+		const ids = treatingIds ? treatingIds.split(",") : [];
 
-		for (const id of treatingIds.split(",")) {
+		for (const [id, ac] of watching.current) {
+			if (ids.includes(id)) continue;
+			ac.abort();
+			watching.current.delete(id);
+		}
+
+		for (const id of ids) {
 			if (watching.current.has(id)) continue;
 			const ac = new AbortController();
 			watching.current.set(id, ac);
-			if (!processById.value[id]) {
-				processById.value = {
-					...processById.value,
-					[id]: { stage: "transcribe", preview: "", startedAt: Date.now() },
-				};
-			}
 			void watchLectureProcess(id, (event) => {
+				if (event.type === "init") {
+					lectures.value = lectures.value.map((row) =>
+						row.id === id ? { ...row, processStage: event.stage as ProcessStage } : row
+					);
+				}
+				if (event.type === "stage") {
+					lectures.value = lectures.value.map((row) =>
+						row.id === id && row.processStage !== event.stage
+							? {
+								...row,
+								processStage: event.stage as ProcessStage,
+								updatedAt: new Date().toISOString(),
+							}
+							: row
+					);
+				}
 				const next = applyProcessEvent(processById.value, id, event);
 				if (next) processById.value = next;
-			}, ac.signal).catch(() => {}).finally(() => {
+			}, ac.signal).finally(() => {
 				watching.current.delete(id);
 				if (!ac.signal.aborted) void load();
 			});
@@ -411,14 +427,16 @@ export default function Home({
 
 		if (row.status === SessionStatus.PROCESSING) {
 			const progress = processById.value[row.id];
+			const stage = progress?.stage || row.processStage || "";
+			const startedAt = new Date(row.updatedAt || row.createdAt).getTime();
 			return (
 				<div class="lecture-row" aria-current={selected ? "true" : undefined}>
 					{inner}
 					<div class="lecture-stream">
 						<p>
-							{STAGE_LABEL[progress?.stage || ""] || "Traitement"}
+							{STAGE_LABEL[stage] || "Traitement"}
 							{" · "}
-							{formatDuration(Math.max(0, Date.now() - (progress?.startedAt || Date.now())))}
+							{formatDuration(Math.max(0, Date.now() - startedAt))}
 						</p>
 						{progress?.preview ? <pre>{progress.preview}</pre> : null}
 					</div>

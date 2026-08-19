@@ -23,11 +23,6 @@ function colorFor(name: string): string {
 	return PALETTE[hash % PALETTE.length];
 }
 
-function parseJson(text: string): ClassifyPayload {
-	const trimmed = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
-	return JSON.parse(trimmed) as ClassifyPayload;
-}
-
 function asName(value: unknown): string {
 	return typeof value === "string" ? value.trim() : "";
 }
@@ -46,24 +41,15 @@ function normalizeName(name: string): string {
 		.trim();
 }
 
-function matchName<T extends { name: string }>(items: T[], name: string): T | undefined {
+async function findOrCreate<T extends { id: string; name: string }>(
+	name: string,
+	known: T[],
+	create: (name: string, color: string) => Promise<T>,
+): Promise<T> {
 	const key = normalizeName(name);
-	if (!key) return undefined;
-	return items.find((item) => normalizeName(item.name) === key);
-}
-
-async function findOrCreateSubject(name: string, known: Subject[]): Promise<Subject> {
-	const match = matchName(known, name);
+	const match = known.find((item) => normalizeName(item.name) === key);
 	if (match) return match;
-	const created = await Subject.create({ name, color: colorFor(name) });
-	known.push(created);
-	return created;
-}
-
-async function findOrCreateTag(name: string, known: Tag[]): Promise<Tag> {
-	const match = matchName(known, name);
-	if (match) return match;
-	const created = await Tag.create({ name, color: colorFor(name) });
+	const created = await create(name, colorFor(name));
 	known.push(created);
 	return created;
 }
@@ -78,22 +64,23 @@ export async function classify(lectureId: string): Promise<void> {
 		Tag.findAll({ order: [["name", "ASC"]] }),
 	]);
 
-	const content = [
-		catalogBlock("Matières existantes", subjects.map((item) => item.name)),
-		catalogBlock("Étiquettes existantes", tags.map((item) => item.name)),
-		"Transcription :",
-		transcript,
-	].join("\n\n");
-
 	const raw = await chat(
 		[
 			{ role: "system", content: PROMPT_CLASSIFY },
-			{ role: "user", content },
+			{
+				role: "user",
+				content: [
+					catalogBlock("Matières existantes", subjects.map((item) => item.name)),
+					catalogBlock("Étiquettes existantes", tags.map((item) => item.name)),
+					"Transcription :",
+					transcript,
+				].join("\n\n"),
+			},
 		],
 		{ format: "json", temperature: 0.2 },
 	);
 
-	const payload = parseJson(raw);
+	const payload = JSON.parse(raw) as ClassifyPayload;
 	const title = asName(payload.title).slice(0, 80);
 	if (!title) throw new Error("classify_missing_title");
 
@@ -110,17 +97,20 @@ export async function classify(lectureId: string): Promise<void> {
 		if (tagNames.length >= 6) break;
 	}
 
-	if (subjectName) {
-		const subject = await findOrCreateSubject(subjectName, subjects);
-		lecture.subjectId = subject.id;
-	}
+	const subject = subjectName
+		? await findOrCreate(subjectName, subjects, (name, color) => Subject.create({ name, color }))
+		: null;
 
-	lecture.title = title;
-	await lecture.save();
+	await lecture.update({
+		title,
+		subjectId: subject?.id ?? lecture.subjectId,
+	}, { silent: true });
 
 	if (tagNames.length === 0) return;
 
-	const resolved = await Promise.all(tagNames.map((name) => findOrCreateTag(name, tags)));
+	const resolved = await Promise.all(
+		tagNames.map((name) => findOrCreate(name, tags, (item, color) => Tag.create({ name: item, color }))),
+	);
 	await LectureTag.destroy({ where: { lectureId } });
 	await LectureTag.bulkCreate(resolved.map((tag) => ({ lectureId, tagId: tag.id })));
 }

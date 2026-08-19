@@ -2,7 +2,7 @@ import type { AppRouter } from "@magi/api";
 import { HttpClient } from "@webtools/expressapi";
 import { Cookies } from "@webtools/slick-client";
 
-import { readNdjson } from "./utils/ndjson.ts";
+import { readNdjson, sleep } from "./utils/ndjson.ts";
 
 type MagiClient = HttpClient<AppRouter>;
 
@@ -53,24 +53,68 @@ export function createClient(baseUrl?: string): MagiClient {
 }
 
 export type ProcessStreamEvent =
-	| { type: "init"; stage: string; startedAt: number; preview: string }
+	| { type: "init"; stage: string; preview: string }
 	| { type: "stage"; stage: string }
 	| { type: "delta"; text: string }
 	| { type: "done" }
 	| { type: "error"; error: string };
 
-export async function watchLectureProcess(
-	lectureId: string,
-	onEvent: (event: ProcessStreamEvent) => void,
+export type ChatLiveEvent =
+	| { type: "init"; startedAt: number; text: string }
+	| { type: "delta"; text: string }
+	| { type: "done"; data: ChatLiveMessage }
+	| { type: "error"; error: string };
+
+type ChatLiveMessage = {
+	id: string;
+	role: "user" | "assistant";
+	content: string;
+	attachments?: Array<{ kind: "image" | "pdf" | "text"; path: string; name?: string }> | null;
+};
+
+type LiveEvent = { type: string };
+
+async function readLive<T extends LiveEvent>(
+	path: string,
+	onEvent: (event: T) => void,
 	signal?: AbortSignal,
 ): Promise<void> {
 	const url = nodeUrl();
 	if (!url) throw new Error("No node URL found.");
 
-	const response = await fetch(`${url}/lectures/${encodeURIComponent(lectureId)}/wait`, { signal });
-	if (!response.ok) throw new Error("wait_failed");
-
-	for await (const event of readNdjson<ProcessStreamEvent>(response)) {
-		onEvent(event);
+	while (!signal?.aborted) {
+		try {
+			const response = await fetch(`${url}${path}`, { signal });
+			if (!response.ok) throw new Error("live_failed");
+			let terminal = false;
+			for await (const event of readNdjson<T>(response)) {
+				if (event.type === "idle" || event.type === "done" || event.type === "error") {
+					terminal = true;
+				}
+				if (event.type !== "idle") onEvent(event);
+				if (terminal) break;
+			}
+			if (terminal) return;
+		} catch {
+			if (signal?.aborted) return;
+		}
+		if (!signal) return;
+		await sleep(500, signal);
 	}
+}
+
+export function watchLectureProcess(
+	lectureId: string,
+	onEvent: (event: ProcessStreamEvent) => void,
+	signal?: AbortSignal,
+): Promise<void> {
+	return readLive(`/lectures/${encodeURIComponent(lectureId)}/wait`, onEvent, signal);
+}
+
+export function watchChatLive(
+	lectureId: string,
+	onEvent: (event: ChatLiveEvent) => void,
+	signal?: AbortSignal,
+): Promise<void> {
+	return readLive(`/lectures/${encodeURIComponent(lectureId)}/chat/live`, onEvent, signal);
 }

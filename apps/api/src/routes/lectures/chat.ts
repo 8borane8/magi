@@ -4,7 +4,7 @@ import { chatFileKind } from "@magi/shared/types/chat-file";
 import { type ChatAttachment, ChatMessage, ChatRole } from "@/models/chat-message.ts";
 import type { Lecture } from "@/models/lecture.ts";
 import { replyStream } from "@/services/ai/index.ts";
-import { readChatDocument } from "@/services/ai/documents.ts";
+import * as chatLive from "@/services/chat-events.ts";
 import * as storage from "@/services/storage.ts";
 import { sendFile } from "@/utils/files.ts";
 import { sendNdjson } from "@/utils/ndjson.ts";
@@ -28,6 +28,46 @@ function chatError(error: unknown): { status: number; error: string } {
 	return { status: 502, error: "ai_unavailable" };
 }
 
+async function generateReply(
+	lecture: Lecture,
+	user: ChatMessage,
+	previous: ChatMessage[],
+	attachments: ChatAttachment[],
+): Promise<void> {
+	let answer = "";
+	try {
+		for await (
+			const piece of replyStream({
+				lecture,
+				history: [...previous, user].map((item) => ({
+					role: item.role,
+					content: item.content,
+					attachments: item.attachments,
+				})),
+			})
+		) {
+			answer += piece;
+			chatLive.appendDelta(lecture.id, piece);
+		}
+
+		if (!answer.trim()) throw new Error("empty_reply");
+
+		const assistant = await ChatMessage.create({
+			lectureId: lecture.id,
+			role: ChatRole.ASSISTANT,
+			content: answer.trim(),
+			attachments: null,
+		});
+
+		chatLive.endChat(lecture.id, { type: "done", data: publicMessage(assistant) });
+	} catch (error) {
+		console.error(error);
+		await user.destroy();
+		await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
+		chatLive.endChat(lecture.id, { type: "error", error: chatError(error).error });
+	}
+}
+
 export default new Router<{ lecture: Lecture }>()
 	.get("/:lectureId/chat", async (req, res) => {
 		const items = await ChatMessage.findAll({
@@ -39,6 +79,10 @@ export default new Router<{ lecture: Lecture }>()
 			success: true,
 			data: items.map(publicMessage),
 		});
+	})
+	.get("/:lectureId/chat/live", (req, res) => {
+		const lectureId = req.data.lecture.id;
+		return sendNdjson(res, (send, signal) => chatLive.followChat(lectureId, send, signal));
 	})
 	.get("/:lectureId/chat/:fileName", (req, res) => {
 		const { fileName } = req.params;
@@ -64,6 +108,13 @@ export default new Router<{ lecture: Lecture }>()
 				});
 			}
 
+			if (chatLive.isBusy(lecture.id)) {
+				return res.status(409).json({
+					success: false as const,
+					error: "busy",
+				});
+			}
+
 			const attachments: ChatAttachment[] = [];
 			try {
 				for (const file of files) {
@@ -75,13 +126,8 @@ export default new Router<{ lecture: Lecture }>()
 							error: "unsupported_file",
 						});
 					}
-
 					const path = await storage.saveChatFile(lecture.id, file, kind);
-					const attachment: ChatAttachment = { kind, path, name: file.name };
-					if (kind !== "image") {
-						attachment.text = await readChatDocument(storage.chatFilePath(lecture.id, path), kind);
-					}
-					attachments.push(attachment);
+					attachments.push({ kind, path, name: file.name });
 				}
 			} catch (error) {
 				await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
@@ -104,41 +150,20 @@ export default new Router<{ lecture: Lecture }>()
 				attachments: attachments.length ? attachments : null,
 			});
 
-			return sendNdjson(res, async (send) => {
-				send({ type: "user", data: publicMessage(user) });
+			if (!chatLive.startChat(lecture.id)) {
+				await user.destroy();
+				await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
+				return res.status(409).json({
+					success: false as const,
+					error: "busy",
+				});
+			}
 
-				let answer = "";
-				try {
-					for await (
-						const piece of replyStream({
-							lecture,
-							history: [...previous, user].map((item) => ({
-								role: item.role,
-								content: item.content,
-								attachments: item.attachments,
-							})),
-						})
-					) {
-						answer += piece;
-						send({ type: "delta", text: piece });
-					}
+			void generateReply(lecture, user, previous, attachments);
 
-					if (!answer.trim()) throw new Error("empty_reply");
-
-					const assistant = await ChatMessage.create({
-						lectureId: lecture.id,
-						role: ChatRole.ASSISTANT,
-						content: answer.trim(),
-						attachments: null,
-					});
-
-					send({ type: "done", data: publicMessage(assistant) });
-				} catch (error) {
-					console.error(error);
-					await user.destroy();
-					await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
-					send({ type: "error", error: chatError(error).error });
-				}
+			return res.json({
+				success: true as const,
+				data: publicMessage(user),
 			});
 		},
 		[],
@@ -150,6 +175,13 @@ export default new Router<{ lecture: Lecture }>()
 		},
 	)
 	.delete("/:lectureId/chat", async (req, res) => {
+		if (chatLive.isBusy(req.data.lecture.id)) {
+			return res.status(409).json({
+				success: false as const,
+				error: "busy",
+			});
+		}
+
 		await ChatMessage.destroy({ where: { lectureId: req.data.lecture.id } });
 		await storage.removeChatDir(req.data.lecture.id);
 

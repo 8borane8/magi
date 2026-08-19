@@ -47,7 +47,6 @@ export default {
 						from: query.filters.from || undefined,
 						to: query.filters.to || undefined,
 						limit: 200,
-						page: 1,
 					},
 				}),
 			]);

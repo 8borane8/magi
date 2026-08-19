@@ -5,9 +5,8 @@ import { useEffect, useRef } from "preact/hooks";
 import { type ChatFileKind, chatFileKind } from "@magi/shared/types/chat-file";
 
 import ChatMessage, { type ChatMessageData } from "../../../components/chat-message.tsx";
-import { createClient } from "../../../client.ts";
+import { type ChatLiveEvent, createClient, watchChatLive } from "../../../client.ts";
 import { formatDuration } from "../../../utils/lecture-format.ts";
-import { readNdjson } from "../../../utils/ndjson.ts";
 
 const MAX_FILES = 4;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -17,6 +16,7 @@ const SEND_ERRORS: Record<string, string> = {
 		"Le contexte du modèle est trop petit pour ce cours. Augmente OLLAMA_CONTEXT_LENGTH ou raccourcis l'historique.",
 	unsupported_file: FILE_HINT,
 	pdf_unreadable: "Impossible de lire ce PDF.",
+	busy: "Une réponse est déjà en cours.",
 };
 
 type DraftFile = {
@@ -24,12 +24,6 @@ type DraftFile = {
 	url: string;
 	kind: ChatFileKind;
 };
-
-type ChatStreamEvent =
-	| { type: "user"; data: ChatMessageData }
-	| { type: "delta"; text: string }
-	| { type: "done"; data: ChatMessageData }
-	| { type: "error"; error: string };
 
 function filesFromDataTransfer(data: DataTransfer | null): File[] {
 	if (!data) return [];
@@ -71,6 +65,7 @@ export default function LectureChat({
 	const listRef = useRef<HTMLOListElement>(null);
 	const dialogRef = useRef<HTMLDialogElement>(null);
 	const fileRef = useRef<HTMLInputElement>(null);
+	const waitAbort = useRef<AbortController | null>(null);
 
 	const srcPrefix = `${nodeUrl.replace(/\/+$/, "")}/lectures/${lectureId}/chat`;
 	const count = messages.value.length;
@@ -78,29 +73,83 @@ export default function LectureChat({
 	const Tag = fullPage ? "section" : "aside";
 	void tick.value;
 
+	async function reloadMessages() {
+		try {
+			const result = await createClient().get("/lectures/:lectureId/chat", {
+				params: { lectureId },
+			});
+			if (result.success && Array.isArray(result.data)) messages.value = result.data;
+		} catch {
+			error.value = "Impossible de charger la conversation.";
+		}
+	}
+
+	async function waitReply(reloadOnIdle = false) {
+		waitAbort.current?.abort();
+		const ac = new AbortController();
+		waitAbort.current = ac;
+		let finished = false;
+		let sawLive = false;
+
+		try {
+			await watchChatLive(lectureId, (event: ChatLiveEvent) => {
+				sawLive = true;
+				if (event.type === "init") {
+					sending.value = true;
+					streamText.value = event.text;
+					sendStartedAt.value = event.startedAt;
+					return;
+				}
+				if (event.type === "delta") {
+					sending.value = true;
+					streamText.value += event.text;
+					return;
+				}
+				if (event.type === "done") {
+					finished = true;
+					const item = event.data as ChatMessageData;
+					if (!messages.value.some((message) => message.id === item.id)) {
+						messages.value = [...messages.value, item];
+					}
+					streamText.value = "";
+					sending.value = false;
+					return;
+				}
+				if (event.type === "error") {
+					finished = true;
+					streamText.value = "";
+					sending.value = false;
+					error.value = SEND_ERRORS[event.error] || "Envoi impossible.";
+					void reloadMessages();
+				}
+			}, ac.signal);
+		} finally {
+			if (!ac.signal.aborted && !finished) {
+				if (sawLive || reloadOnIdle) {
+					streamText.value = "";
+					sending.value = false;
+				}
+				if (reloadOnIdle) void reloadMessages();
+			}
+		}
+	}
+
 	useEffect(() => {
-		let cancelled = false;
+		let alive = true;
 
 		if (Array.isArray(initialMessages)) {
 			pending.value = false;
 		} else {
-			void (async () => {
-				try {
-					const result = await createClient().get("/lectures/:lectureId/chat", {
-						params: { lectureId },
-					});
-					if (!result.success || !Array.isArray(result.data)) throw new Error("chat_load_failed");
-					if (!cancelled) messages.value = result.data;
-				} catch {
-					if (!cancelled) error.value = "Impossible de charger la conversation.";
-				} finally {
-					if (!cancelled) pending.value = false;
-				}
-			})();
+			void reloadMessages().finally(() => {
+				if (alive) pending.value = false;
+			});
 		}
 
+		void waitReply();
+
 		return () => {
-			cancelled = true;
+			alive = false;
+			waitAbort.current?.abort();
 			revokeDraft(files.value);
 		};
 	}, []);
@@ -187,9 +236,7 @@ export default function LectureChat({
 		draft.value = "";
 		files.value = [];
 
-		let userId: string | null = null;
 		const restore = (message: string) => {
-			if (userId) messages.value = messages.value.filter((item) => item.id !== userId);
 			error.value = message;
 			draft.value = content;
 			files.value = attached;
@@ -209,35 +256,32 @@ export default function LectureChat({
 					body,
 				},
 			);
-			const mime = response.headers.get("content-type") || "";
+			const result = await response.json() as {
+				success?: boolean;
+				data?: ChatMessageData;
+				error?: string;
+			};
 
-			if (!mime.includes("ndjson")) {
-				const code = (await response.json() as { error?: string }).error;
-				restore((code && SEND_ERRORS[code]) || "Envoi impossible.");
+			if (!response.ok || !result.success || !result.data) {
+				if (result.error === "busy") {
+					restore(SEND_ERRORS.busy);
+					sending.value = false;
+					void waitReply(true);
+					return;
+				}
+				restore((result.error && SEND_ERRORS[result.error]) || "Envoi impossible.");
+				sending.value = false;
 				return;
 			}
 
-			for await (const event of readNdjson<ChatStreamEvent>(response)) {
-				if (event.type === "user") {
-					userId = event.data.id;
-					messages.value = [...messages.value, event.data];
-				} else if (event.type === "delta") {
-					streamText.value += event.text;
-				} else if (event.type === "done") {
-					revokeDraft(attached);
-					messages.value = [...messages.value, event.data];
-					streamText.value = "";
-					sending.value = false;
-				} else if (event.type === "error") {
-					restore(SEND_ERRORS[event.error] || "Envoi impossible.");
-					sending.value = false;
-				}
+			revokeDraft(attached);
+			if (!messages.value.some((item) => item.id === result.data!.id)) {
+				messages.value = [...messages.value, result.data];
 			}
+			void waitReply(true);
 		} catch {
 			restore("Envoi impossible.");
-		} finally {
 			sending.value = false;
-			streamText.value = "";
 		}
 	}
 

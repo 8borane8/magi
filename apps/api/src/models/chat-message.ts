@@ -20,7 +20,6 @@ export type ChatAttachment = {
 	kind: ChatFileKind;
 	path: string;
 	name?: string;
-	text?: string;
 };
 
 export class ChatMessage extends Model<InferAttributes<ChatMessage>, InferCreationAttributes<ChatMessage>> {

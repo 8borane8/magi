@@ -6,3 +6,6 @@ export enum SessionStatus {
 	COMPLETED = "completed",
 	FAILED = "failed",
 }
+
+export const PROCESS_STAGES = ["transcribe", "classify", "fiche"] as const;
+export type ProcessStage = typeof PROCESS_STAGES[number];

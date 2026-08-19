@@ -42,8 +42,7 @@ async function withDocuments(
 	if (docs.length === 0) return content;
 
 	const blocks = await Promise.all(docs.map(async (doc) => {
-		const text = doc.text ??
-			await readChatDocument(storage.chatFilePath(lectureId, doc.path), doc.kind).catch(() => "");
+		const text = await readChatDocument(storage.chatFilePath(lectureId, doc.path), doc.kind);
 		return `## Document : ${doc.name || doc.path}\n${text || "(fichier vide)"}`;
 	}));
 

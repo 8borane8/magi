@@ -16,7 +16,7 @@ import {
 	PrimaryKey,
 } from "@sequelize/core/decorators-legacy";
 
-import { SessionStatus } from "@magi/shared/types/session";
+import { PROCESS_STAGES, SessionStatus } from "@magi/shared/types/session";
 import { ChatMessage } from "./chat-message.ts";
 import { LectureTag } from "./lecture-tag.ts";
 import { Subject } from "./subject.ts";
@@ -51,6 +51,9 @@ export class Lecture extends Model<InferAttributes<Lecture>, InferCreationAttrib
 	@Default(SessionStatus.RECORDING)
 	@NotNull
 	declare status: CreationOptional<SessionStatus>;
+
+	@Attribute(DataTypes.ENUM(...PROCESS_STAGES))
+	declare processStage: (typeof PROCESS_STAGES)[number] | null;
 
 	@Attribute(DataTypes.INTEGER)
 	@Default(0)

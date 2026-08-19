@@ -1,7 +1,7 @@
 import { Router, z } from "@webtools/expressapi";
 
 import * as processEvents from "@/services/process-events.ts";
-import { SessionStatus } from "@magi/shared/types/session";
+import { type ProcessStage, SessionStatus } from "@magi/shared/types/session";
 import * as recording from "@/services/recording.ts";
 import * as storage from "@/services/storage.ts";
 import { Lecture } from "@/models/lecture.ts";
@@ -21,8 +21,14 @@ async function hasTranscript(lectureId: string): Promise<boolean> {
 	}
 }
 
+async function markStage(lecture: Lecture, stage: ProcessStage): Promise<void> {
+	if (lecture.processStage !== stage) {
+		await lecture.update({ processStage: stage });
+	}
+	processEvents.setStage(lecture.id, stage);
+}
+
 async function processLecture(lectureId: string): Promise<void> {
-	processEvents.startProcess(lectureId);
 	const lecture = await Lecture.findByPk(lectureId);
 	if (!lecture) {
 		processEvents.endProcess(lectureId, "lecture_not_found");
@@ -31,20 +37,25 @@ async function processLecture(lectureId: string): Promise<void> {
 
 	try {
 		if (!await hasTranscript(lectureId)) {
-			processEvents.setStage(lectureId, "transcribe");
+			await markStage(lecture, "transcribe");
 			await ai.transcribe(lectureId);
 		}
-		processEvents.setStage(lectureId, "classify");
+		await markStage(lecture, "classify");
 		await ai.classify(lectureId);
-		processEvents.setStage(lectureId, "fiche");
+		await markStage(lecture, "fiche");
 		await ai.writeFiche(lectureId, (text) => processEvents.appendDelta(lectureId, text));
-		await lecture.update({ status: SessionStatus.COMPLETED });
+		await lecture.update({ status: SessionStatus.COMPLETED, processStage: null });
 		processEvents.endProcess(lectureId);
 	} catch (error) {
 		console.error(error);
-		await lecture.update({ status: SessionStatus.FAILED });
+		await lecture.update({ status: SessionStatus.FAILED, processStage: null });
 		processEvents.endProcess(lectureId, error instanceof Error ? error.message : "failed");
 	}
+}
+
+function startProcessing(lecture: Lecture): void {
+	processEvents.startProcess(lecture.id, lecture.processStage || "transcribe");
+	recording.runProcess(lecture.id, () => processLecture(lecture.id));
 }
 
 async function setPaused(lecture: Lecture, paused: boolean): Promise<boolean> {
@@ -58,9 +69,6 @@ async function setPaused(lecture: Lecture, paused: boolean): Promise<boolean> {
 		await lecture.update({
 			status: paused ? SessionStatus.PAUSED : SessionStatus.RECORDING,
 		});
-
-		if (paused) recording.clearStalePause(lecture.id);
-		else recording.armStalePause(lecture.id);
 		ok = true;
 	});
 
@@ -181,9 +189,11 @@ export default new Router<{ lecture: Lecture }>()
 				return;
 			}
 
-			recording.clearStalePause(lecture.id);
 			await storage.finalizeRecord(lecture.id, lecture.audioMs);
-			await lecture.update({ status: SessionStatus.PROCESSING });
+			await lecture.update({
+				status: SessionStatus.PROCESSING,
+				processStage: "transcribe",
+			});
 		});
 
 		if (notLive) {
@@ -199,7 +209,7 @@ export default new Router<{ lecture: Lecture }>()
 			});
 		}
 
-		recording.runProcess(lecture.id, () => processLecture(lecture.id));
+		startProcessing(lecture);
 		return res.json({ success: true });
 	})
 	.post("/:lectureId/retry", async (req, res) => {
@@ -209,7 +219,10 @@ export default new Router<{ lecture: Lecture }>()
 		await recording.withLectureLock(lecture.id, async () => {
 			await lecture.reload();
 			if (lecture.status !== SessionStatus.FAILED) return;
-			await lecture.update({ status: SessionStatus.PROCESSING });
+			await lecture.update({
+				status: SessionStatus.PROCESSING,
+				processStage: "transcribe",
+			});
 			accepted = true;
 		});
 
@@ -220,6 +233,6 @@ export default new Router<{ lecture: Lecture }>()
 			});
 		}
 
-		recording.runProcess(lecture.id, () => processLecture(lecture.id));
+		startProcessing(lecture);
 		return res.json({ success: true });
 	});
