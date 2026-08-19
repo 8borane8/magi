@@ -278,21 +278,357 @@
 }
 
 .markdown .diagram {
-	width: 100%;
+	--mmd-0: var(--color-accent);
+	--mmd-0-soft: var(--color-accent-soft);
+	--mmd-1: var(--color-success);
+	--mmd-1-soft: var(--color-success-soft);
+	--mmd-2: var(--color-theorem);
+	--mmd-2-soft: var(--color-theorem-soft);
+	--mmd-3: var(--color-demo);
+	--mmd-3-soft: var(--color-demo-soft);
+	--mmd-4: var(--color-warning);
+	--mmd-4-soft: var(--color-warning-soft);
+	--mmd-5: var(--color-danger);
+	--mmd-5-soft: var(--color-danger-soft);
+	--mmd-pie-0: color-mix(in srgb, var(--mmd-0) 42%, var(--color-bg-elevated));
+	--mmd-pie-1: color-mix(in srgb, var(--mmd-1) 42%, var(--color-bg-elevated));
+	--mmd-pie-2: color-mix(in srgb, var(--mmd-2) 42%, var(--color-bg-elevated));
+	--mmd-pie-3: color-mix(in srgb, var(--mmd-3) 42%, var(--color-bg-elevated));
+	--mmd-pie-4: color-mix(in srgb, var(--mmd-4) 42%, var(--color-bg-elevated));
+	--mmd-pie-5: color-mix(in srgb, var(--mmd-5) 42%, var(--color-bg-elevated));
 
-	display: flex;
-	flex-direction: row;
-	justify-content: center;
-	align-items: center;
-	flex-wrap: nowrap;
+	width: 100%;
+	max-width: 100%;
+
+	text-align: center;
+
+	display: block;
 
 	margin: 0;
-	padding: var(--space-5);
+	padding: var(--space-3);
 
-	overflow-x: auto;
+	overflow: auto;
 	background: var(--color-bg-muted);
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-md);
+}
+
+[data-theme="dark"] .markdown .diagram {
+	--mmd-0-soft: color-mix(in srgb, var(--mmd-0) 48%, var(--color-bg-elevated));
+	--mmd-1-soft: color-mix(in srgb, var(--mmd-1) 48%, var(--color-bg-elevated));
+	--mmd-2-soft: color-mix(in srgb, var(--mmd-2) 48%, var(--color-bg-elevated));
+	--mmd-3-soft: color-mix(in srgb, var(--mmd-3) 48%, var(--color-bg-elevated));
+	--mmd-4-soft: color-mix(in srgb, var(--mmd-4) 48%, var(--color-bg-elevated));
+	--mmd-5-soft: color-mix(in srgb, var(--mmd-5) 48%, var(--color-bg-elevated));
+	--mmd-pie-0: var(--mmd-0);
+	--mmd-pie-1: var(--mmd-1);
+	--mmd-pie-2: var(--mmd-2);
+	--mmd-pie-3: var(--mmd-3);
+	--mmd-pie-4: var(--mmd-4);
+	--mmd-pie-5: var(--mmd-5);
+}
+
+.markdown .diagram svg {
+	max-width: none;
+	height: auto;
+
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 1.35;
+
+	text-align: center;
+	vertical-align: middle;
+
+	display: inline-block;
+
+	overflow: visible;
+}
+
+.markdown .diagram :is(text, tspan) {
+	fill: currentColor;
+	stroke: none;
+}
+
+.markdown .diagram :is(.flowchart-link, .transition, .relation, .messageLine0, .messageLine1, .loopLine, .actor-line, .note-edge, .edge, .branch, .relationshipLine, .divider),
+.markdown .diagram .edgePath path,
+.markdown .diagram :is(line, polyline) {
+	fill: none;
+	stroke: var(--color-text-muted);
+	stroke-width: 1.5px;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.markdown .diagram :is(.messageLine1, .loopLine, .edge-pattern-dashed) {
+	stroke-dasharray: 3 3;
+}
+
+.markdown .diagram .edge-pattern-dotted {
+	stroke-dasharray: 1 2;
+}
+
+.markdown .diagram .edge-thickness-thick {
+	stroke-width: 3.5px;
+}
+
+.markdown .diagram .edge-thickness-invisible {
+	fill: none;
+	stroke-width: 0;
+}
+
+.markdown .diagram :is(rect, polygon, circle, ellipse),
+.markdown .diagram :is(.node path, .actor, .labelBox, .label-container, .entityBox, .person, .system, .container, .component),
+.markdown .diagram .actor-man :is(circle, line),
+.markdown .diagram .classGroup rect {
+	fill: var(--mmd-0-soft);
+	stroke: var(--mmd-0);
+	stroke-width: 1.5px;
+}
+
+.markdown .diagram :is(.cluster rect, .statediagram-cluster rect, .boundary, .attributeBoxEven) {
+	fill: var(--color-bg-muted);
+	stroke: var(--color-border);
+}
+
+.markdown .diagram .attributeBoxOdd {
+	fill: var(--color-bg-elevated);
+	stroke: var(--color-border);
+}
+
+.markdown .diagram :is(.note, .state-note, .face, .milestone),
+.markdown .diagram :is(.note, .statediagram-note) rect {
+	fill: var(--mmd-4-soft);
+	stroke: var(--mmd-4);
+}
+
+.markdown .diagram :is(.edgeLabel rect, .labelBkg, .classLabel .box) {
+	fill: var(--color-bg-elevated);
+	stroke: none;
+}
+
+.markdown .diagram :is(.activation0, .activation1, .activation2, .done0, .done1, .done2, .done3) {
+	fill: var(--color-bg-muted);
+	stroke: var(--color-border-strong);
+}
+
+.markdown .diagram .sequenceNumber {
+	fill: var(--color-on-accent);
+}
+
+.markdown .diagram [id$="-sequencenumber"] {
+	fill: var(--mmd-0);
+	stroke: none;
+}
+
+.markdown .diagram :is(.state-start, .fork-join) {
+	fill: var(--color-text);
+	stroke: var(--color-text);
+}
+
+.markdown .diagram :is(.state-end, .end-state-inner) {
+	fill: var(--color-bg-elevated);
+	stroke: var(--color-text);
+}
+
+.markdown .diagram :is(marker, .arrowheadPath, .arrowMarkerPath, .point, .marker),
+.markdown .diagram :is(marker, .anchor) path,
+.markdown .diagram marker polygon {
+	fill: var(--color-text-muted);
+	stroke: var(--color-text-muted);
+	stroke-width: 0;
+}
+
+.markdown .diagram .link {
+	fill: none;
+	stroke-opacity: 0.5;
+}
+
+.markdown .diagram .pieCircle {
+	stroke: var(--color-bg-elevated);
+	stroke-width: 2px;
+}
+
+.markdown .diagram .pieOuterCircle {
+	fill: none;
+	stroke: var(--color-border);
+}
+
+.markdown .diagram [data-tone="0"] {
+	fill: var(--mmd-pie-0);
+}
+.markdown .diagram [data-tone="1"] {
+	fill: var(--mmd-pie-1);
+}
+.markdown .diagram [data-tone="2"] {
+	fill: var(--mmd-pie-2);
+}
+.markdown .diagram [data-tone="3"] {
+	fill: var(--mmd-pie-3);
+}
+.markdown .diagram [data-tone="4"] {
+	fill: var(--mmd-pie-4);
+}
+.markdown .diagram [data-tone="5"] {
+	fill: var(--mmd-pie-5);
+}
+
+.markdown .diagram .legend [data-tone] {
+	stroke: none;
+}
+
+.markdown .diagram :is(.section0, .section2) {
+	fill: var(--color-bg-muted);
+	stroke: none;
+	opacity: 0.45;
+}
+
+.markdown .diagram :is(.section1, .section3) {
+	fill: var(--color-bg);
+	stroke: none;
+	opacity: 0.45;
+}
+
+.markdown .diagram :is(.active0, .active1, .active2, .active3) {
+	fill: var(--mmd-1-soft);
+	stroke: var(--mmd-1);
+}
+
+.markdown .diagram :is(.crit0, .crit1, .crit2, .crit3, .activeCrit0, .activeCrit1, .activeCrit2, .activeCrit3, .error-icon) {
+	fill: var(--mmd-5-soft);
+	stroke: var(--mmd-5);
+}
+
+.markdown .diagram :is(.today, .vert) {
+	fill: none;
+	stroke: var(--mmd-0);
+	stroke-width: 2px;
+}
+
+.markdown .diagram .grid path {
+	stroke-width: 0;
+}
+
+.markdown .diagram .exclude-range {
+	fill: var(--mmd-5-soft);
+	stroke: none;
+	opacity: 0.35;
+}
+
+.markdown .diagram :is(.task0, .commit0, .commit-highlight0, .label0, .task-type-0, .section-type-0, .actor-0),
+.markdown .diagram :is(.section-0, .section--1, .section-root) :is(rect, path, circle, polygon),
+.markdown .diagram .bar:nth-of-type(6n + 1) {
+	fill: var(--mmd-0-soft);
+	stroke: var(--mmd-0);
+}
+
+.markdown .diagram :is(.task1, .commit1, .commit-highlight1, .label1, .task-type-1, .section-type-1, .actor-1),
+.markdown .diagram .section-1 :is(rect, path, circle, polygon),
+.markdown .diagram .bar:nth-of-type(6n + 2) {
+	fill: var(--mmd-1-soft);
+	stroke: var(--mmd-1);
+}
+
+.markdown .diagram :is(.task2, .commit2, .commit-highlight2, .label2, .task-type-2, .section-type-2, .actor-2),
+.markdown .diagram .section-2 :is(rect, path, circle, polygon),
+.markdown .diagram .bar:nth-of-type(6n + 3) {
+	fill: var(--mmd-2-soft);
+	stroke: var(--mmd-2);
+}
+
+.markdown .diagram :is(.task3, .commit3, .commit-highlight3, .label3, .task-type-3, .section-type-3, .actor-3),
+.markdown .diagram .section-3 :is(rect, path, circle, polygon),
+.markdown .diagram .bar:nth-of-type(6n + 4) {
+	fill: var(--mmd-3-soft);
+	stroke: var(--mmd-3);
+}
+
+.markdown .diagram :is(.commit4, .commit-highlight4, .label4, .task-type-4, .section-type-4, .actor-4),
+.markdown .diagram .section-4 :is(rect, path, circle, polygon),
+.markdown .diagram .bar:nth-of-type(6n + 5) {
+	fill: var(--mmd-4-soft);
+	stroke: var(--mmd-4);
+}
+
+.markdown .diagram :is(.commit5, .commit-highlight5, .label5, .task-type-5, .section-type-5, .actor-5),
+.markdown .diagram .section-5 :is(rect, path, circle, polygon),
+.markdown .diagram .bar:nth-of-type(6n + 6) {
+	fill: var(--mmd-5-soft);
+	stroke: var(--mmd-5);
+}
+
+.markdown .diagram :is(.commit0, .commit-highlight0) {
+	fill: var(--mmd-0);
+}
+.markdown .diagram :is(.commit1, .commit-highlight1) {
+	fill: var(--mmd-1);
+}
+.markdown .diagram :is(.commit2, .commit-highlight2) {
+	fill: var(--mmd-2);
+}
+.markdown .diagram :is(.commit3, .commit-highlight3) {
+	fill: var(--mmd-3);
+}
+.markdown .diagram :is(.commit4, .commit-highlight4) {
+	fill: var(--mmd-4);
+}
+.markdown .diagram :is(.commit5, .commit-highlight5) {
+	fill: var(--mmd-5);
+}
+
+.markdown .diagram :is(.arrow0, .section-edge-0),
+.markdown .diagram .link:nth-of-type(6n + 1) {
+	fill: none;
+	stroke: var(--mmd-0);
+}
+
+.markdown .diagram :is(.arrow1, .section-edge-1),
+.markdown .diagram .link:nth-of-type(6n + 2) {
+	fill: none;
+	stroke: var(--mmd-1);
+}
+
+.markdown .diagram :is(.arrow2, .section-edge-2),
+.markdown .diagram .link:nth-of-type(6n + 3) {
+	fill: none;
+	stroke: var(--mmd-2);
+}
+
+.markdown .diagram :is(.arrow3, .section-edge-3),
+.markdown .diagram .link:nth-of-type(6n + 4) {
+	fill: none;
+	stroke: var(--mmd-3);
+}
+
+.markdown .diagram :is(.arrow4, .section-edge-4),
+.markdown .diagram .link:nth-of-type(6n + 5) {
+	fill: none;
+	stroke: var(--mmd-4);
+}
+
+.markdown .diagram :is(.arrow5, .section-edge-5),
+.markdown .diagram .link:nth-of-type(6n + 6) {
+	fill: none;
+	stroke: var(--mmd-5);
+}
+
+.markdown .diagram :is(.nodeLabel, .edgeLabel, .label, foreignObject, p) {
+	margin: 0;
+
+	text-align: center;
+
+	overflow: visible;
+}
+
+.markdown .diagram :is(.nodeLabel, .edgeLabel, .label) * {
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+
+	text-align: center;
 }
 
 .markdown .code-block > figcaption {
@@ -406,77 +742,6 @@
 
 .markdown .hljs-strong {
 	font-weight: 600;
-}
-
-.markdown .diagram svg {
-	width: auto;
-	max-width: 100%;
-	height: auto;
-
-	display: block;
-}
-
-.markdown .diagram text,
-.markdown .diagram tspan {
-	fill: var(--color-text);
-}
-
-.markdown .diagram .node rect,
-.markdown .diagram .node polygon,
-.markdown .diagram .node circle,
-.markdown .diagram .node ellipse,
-.markdown .diagram .node path,
-.markdown .diagram .actor,
-.markdown .diagram .labelBox,
-.markdown .diagram .note {
-	fill: var(--color-bg-elevated);
-	stroke: var(--color-border-strong);
-}
-
-.markdown .diagram .cluster rect {
-	fill: var(--color-bg);
-	stroke: var(--color-border);
-}
-
-.markdown .diagram .flowchart-link,
-.markdown .diagram .edge-thickness-normal,
-.markdown .diagram .messageLine0,
-.markdown .diagram .messageLine1,
-.markdown .diagram .actor-line,
-.markdown .diagram .loopLine,
-.markdown .diagram line {
-	stroke: var(--color-text-muted);
-}
-
-.markdown .diagram .arrowheadPath,
-.markdown .diagram marker path,
-.markdown .diagram marker polygon {
-	fill: var(--color-text-muted);
-	stroke: var(--color-text-muted);
-}
-
-.markdown .diagram .edgeLabel rect,
-.markdown .diagram .labelBkg {
-	fill: var(--color-bg-elevated);
-}
-
-.markdown .diagram .nodeLabel,
-.markdown .diagram .edgeLabel,
-.markdown .diagram .label,
-.markdown .diagram foreignObject {
-	overflow: visible;
-}
-
-.markdown .diagram .nodeLabel *,
-.markdown .diagram .edgeLabel *,
-.markdown .diagram .label * {
-	color: var(--color-text);
-	font-family: var(--font-sans);
-	font-size: 0.95rem;
-	font-weight: 500;
-	line-height: 1.35;
-
-	overflow: visible;
 }
 
 .markdown a {

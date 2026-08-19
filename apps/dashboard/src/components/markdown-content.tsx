@@ -1,48 +1,81 @@
-import mermaid from "https://esm.sh/mermaid@11.12.0?bundle";
 import { useEffect, useMemo, useRef } from "preact/hooks";
 
 import { renderMarkdown } from "../utils/markdown.ts";
 
-let mermaidReady = false;
-let mermaidSeq = 0;
+type MermaidApi = {
+	initialize: (config: Record<string, unknown>) => void;
+	render: (id: string, definition: string) => Promise<{ svg: string }>;
+};
 
-function setupMermaid(): void {
-	if (mermaidReady) return;
-	mermaid.initialize({
-		startOnLoad: false,
-		suppressErrorRendering: true,
-		securityLevel: "loose",
-		theme: "base",
-		fontFamily: getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() ||
-			"IBM Plex Sans, sans-serif",
-		flowchart: {
-			htmlLabels: true,
-			useMaxWidth: true,
-			padding: 20,
-			wrappingWidth: 280,
-			nodeSpacing: 56,
-			rankSpacing: 56,
-			diagramPadding: 12,
-		},
-		sequence: {
-			useMaxWidth: true,
-			actorMargin: 48,
-			boxMargin: 12,
-			messageMargin: 40,
-		},
-	});
-	mermaidReady = true;
+const MERMAID_HREF = "https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.esm.min.mjs";
+
+let mermaid: Promise<MermaidApi> | undefined;
+let queue: Promise<unknown> = Promise.resolve();
+
+function loadMermaid(): Promise<MermaidApi> {
+	if (!mermaid) {
+		const href = MERMAID_HREF;
+		mermaid = import(href).then((mod) => {
+			const api = (mod as { default?: MermaidApi }).default ?? (mod as unknown as MermaidApi);
+			if (typeof api.render !== "function") throw new Error("mermaid_load_failed");
+			api.initialize({
+				startOnLoad: false,
+				suppressErrorRendering: true,
+				securityLevel: "loose",
+				theme: "base",
+				fontFamily: getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() ||
+					"IBM Plex Sans, sans-serif",
+				fontSize: 14,
+				flowchart: { htmlLabels: true, useMaxWidth: false, padding: 8 },
+			});
+			return api;
+		}).catch((error) => {
+			mermaid = undefined;
+			throw error;
+		});
+	}
+	return mermaid;
 }
 
-function adoptTheme(svg: Element): void {
+function draw(definition: string): Promise<string> {
+	const job = queue.then(async () => {
+		const api = await loadMermaid();
+		const { svg } = await api.render(`mmd${crypto.randomUUID().replaceAll("-", "")}`, definition);
+		return svg;
+	});
+	queue = job.then(() => undefined, () => undefined);
+	return job;
+}
+
+function paintSvg(svg: SVGSVGElement): void {
 	for (const style of svg.querySelectorAll("style")) style.remove();
-	for (const node of svg.querySelectorAll("[style]")) {
-		const el = node as HTMLElement;
-		el.style.removeProperty("color");
-		el.style.removeProperty("fill");
-		el.style.removeProperty("stroke");
-		el.style.removeProperty("background");
-		el.style.removeProperty("background-color");
+	svg.style.removeProperty("max-width");
+	for (const group of [svg.querySelectorAll(".pieCircle"), svg.querySelectorAll(".legend rect")]) {
+		[...group].forEach((el, i) => {
+			el.setAttribute("data-tone", String(i % 6));
+			(el as HTMLElement).style.removeProperty("fill");
+			(el as HTMLElement).style.removeProperty("stroke");
+			el.removeAttribute("fill");
+			el.removeAttribute("stroke");
+		});
+	}
+	for (const fo of svg.querySelectorAll("foreignObject")) {
+		const box = fo.firstElementChild as HTMLElement | null;
+		if (!box) continue;
+		box.style.display = "flex";
+		box.style.flexDirection = "column";
+		box.style.justifyContent = "center";
+		box.style.alignItems = "center";
+		box.style.width = "100%";
+		box.style.height = "100%";
+		box.style.margin = "0";
+		box.style.padding = "0";
+		box.style.textAlign = "center";
+	}
+	const { width, height } = svg.viewBox.baseVal;
+	if (width && height) {
+		svg.setAttribute("width", String(Math.ceil(width)));
+		svg.setAttribute("height", String(Math.ceil(height)));
 	}
 }
 
@@ -59,45 +92,25 @@ async function copyCode(button: HTMLButtonElement): Promise<void> {
 	}, 1500);
 }
 
-function removeMermaidTemp(id: string): void {
-	document.getElementById(id)?.remove();
-	document.getElementById(`d${id}`)?.remove();
-	document.getElementById(`i${id}`)?.remove();
-}
-
-function showDiagramSource(figure: HTMLElement, definition: string): void {
+function failDiagram(figure: HTMLElement, definition: string): void {
 	figure.className = "code-block";
 	figure.removeAttribute("data-definition");
-	const caption = document.createElement("figcaption");
-	const label = document.createElement("span");
-	label.textContent = "Mermaid";
-	caption.append(label);
-	const pre = document.createElement("pre");
-	const code = document.createElement("code");
-	code.textContent = definition;
-	pre.append(code);
-	figure.replaceChildren(caption, pre);
+	figure.innerHTML = "<figcaption><span>Mermaid</span></figcaption><pre><code></code></pre>";
+	figure.querySelector("code")!.textContent = definition;
 }
 
 async function renderDiagrams(root: HTMLElement): Promise<void> {
-	const figures = [...root.querySelectorAll<HTMLElement>("figure.diagram[data-definition]")];
-	if (figures.length === 0) return;
-
-	setupMermaid();
-	for (const figure of figures) {
-		if (figure.querySelector("svg")) continue;
+	for (const figure of [...root.querySelectorAll<HTMLElement>("figure.diagram[data-definition]")]) {
 		const definition = figure.dataset.definition?.trim();
-		if (!definition) continue;
-		const id = `mmd${++mermaidSeq}`;
+		if (!definition || figure.querySelector("svg")) continue;
 		try {
-			const { svg } = await mermaid.render(id, definition);
+			const svg = await draw(definition);
+			if (!root.contains(figure)) continue;
 			figure.innerHTML = svg;
 			const drawn = figure.querySelector("svg");
-			if (drawn) adoptTheme(drawn);
+			if (drawn) paintSvg(drawn);
 		} catch {
-			showDiagramSource(figure, definition);
-		} finally {
-			removeMermaidTemp(id);
+			if (root.contains(figure)) failDiagram(figure, definition);
 		}
 	}
 }
@@ -109,15 +122,12 @@ export default function MarkdownContent({ source }: { source: string }) {
 	useEffect(() => {
 		const el = root.current;
 		if (!el) return;
-
 		const onClick = (event: Event) => {
 			const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-copy]");
-			if (!button || !el.contains(button)) return;
-			void copyCode(button);
+			if (button && el.contains(button)) void copyCode(button);
 		};
 		el.addEventListener("click", onClick);
 		void renderDiagrams(el);
-
 		return () => el.removeEventListener("click", onClick);
 	}, [html]);
 

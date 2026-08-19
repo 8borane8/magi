@@ -206,8 +206,9 @@
 }
 
 #lecture-chat > ol > li > .markdown .diagram {
-	overflow-wrap: normal;
+	white-space: normal;
 	word-break: normal;
+	overflow-wrap: normal;
 }
 
 #lecture-chat > ol > li[data-role="user"] > ul {
