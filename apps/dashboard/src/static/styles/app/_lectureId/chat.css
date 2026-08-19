@@ -439,6 +439,9 @@
 	height: 1rem;
 
 	accent-color: var(--color-accent);
+
+	appearance: auto;
+	cursor: pointer;
 }
 
 #lecture-chat > dialog:not([open]) {

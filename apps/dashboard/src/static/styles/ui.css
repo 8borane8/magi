@@ -154,6 +154,12 @@
 	appearance: auto;
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+	appearance: auto;
+	cursor: pointer;
+}
+
 .error {
 	color: var(--color-danger);
 	font-size: var(--text-sm);
