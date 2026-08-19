@@ -12,6 +12,7 @@ export type ChatOptions = {
 	temperature?: number;
 	numPredict?: number;
 	think?: boolean;
+	signal?: AbortSignal;
 };
 
 type OllamaChatResponse = {
@@ -53,9 +54,12 @@ export async function* chatStream(
 	messages: OllamaMessage[],
 	options: ChatOptions = {},
 ): AsyncGenerator<string> {
+	if (options.signal?.aborted) return;
+
 	const model = options.model || config.ollamaChatModel;
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), config.ollamaTimeoutMs);
+	const timeout = new AbortController();
+	const timer = setTimeout(() => timeout.abort(), config.ollamaTimeoutMs);
+	const signal = options.signal ? AbortSignal.any([options.signal, timeout.signal]) : timeout.signal;
 	const sampling = {
 		...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
 		...(options.numPredict !== undefined ? { num_predict: options.numPredict } : {}),
@@ -73,21 +77,18 @@ export async function* chatStream(
 				...(options.format ? { format: options.format } : {}),
 				...(Object.keys(sampling).length > 0 ? { options: sampling } : {}),
 			}),
-			signal: controller.signal,
+			signal,
 		});
 
 		if (!response.ok || !response.body) {
 			throw contextOrRaw(await readErrorBody(response));
 		}
 
-		const reader = response.body.getReader();
 		const decoder = new TextDecoder();
 		let buffer = "";
 
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) break;
-			buffer += decoder.decode(value, { stream: true });
+		for await (const chunk of response.body) {
+			buffer += decoder.decode(chunk, { stream: true });
 			const lines = buffer.split("\n");
 			buffer = lines.pop() || "";
 			for (const line of lines) {
@@ -106,6 +107,7 @@ export async function* chatStream(
 			if (piece) yield piece;
 		}
 	} catch (error) {
+		if (options.signal?.aborted) return;
 		throwIfAborted(error);
 	} finally {
 		clearTimeout(timer);

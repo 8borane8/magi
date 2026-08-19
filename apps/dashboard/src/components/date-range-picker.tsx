@@ -1,6 +1,5 @@
 import { useSignal } from "@preact/signals";
 import { ChevronLeft, ChevronRight } from "lucide-preact";
-import { useEffect } from "preact/hooks";
 
 const WEEKDAYS = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"];
 const MONTHS = [
@@ -94,16 +93,6 @@ export default function DateRangePicker(
 	const hover = useSignal<Date | null>(parseIso(to) || parseIso(from));
 	const selecting = useSignal(false);
 
-	useEffect(() => {
-		const stop = () => {
-			if (!selecting.value) return;
-			selecting.value = false;
-			commitRange(anchor.value, hover.value, onChange);
-		};
-		globalThis.addEventListener("mouseup", stop);
-		return () => globalThis.removeEventListener("mouseup", stop);
-	}, []);
-
 	const year = cursor.value.getFullYear();
 	const month = cursor.value.getMonth();
 	const cells = buildCells(year, month);
@@ -130,33 +119,30 @@ export default function DateRangePicker(
 	function onDayEnter(date: Date) {
 		if (!selecting.value) return;
 		hover.value = date;
-		focusMonth(date);
-		commitRange(anchor.value, date, onChange);
 	}
 
-	function onDayDown(date: Date) {
-		anchor.value = date;
+	function onDayClick(date: Date) {
+		if (!selecting.value || !anchor.value) {
+			anchor.value = date;
+			hover.value = date;
+			selecting.value = true;
+			focusMonth(date);
+			onChange(toIso(date), toIso(date));
+			return;
+		}
+
 		hover.value = date;
-		selecting.value = true;
+		selecting.value = false;
 		focusMonth(date);
-		onChange(toIso(date), toIso(date));
+		commitRange(anchor.value, date, onChange);
 	}
 
 	function shiftMonth(delta: number) {
 		cursor.value = new Date(year, month + delta, 1);
 	}
 
-	function onNavEnter(delta: number) {
-		if (!selecting.value) return;
-		shiftMonth(delta);
-	}
-
-	function onNavDown(event: Event, delta: number) {
-		event.preventDefault();
-		shiftMonth(delta);
-	}
-
 	function applyManual(nextFrom: string, nextTo: string) {
+		selecting.value = false;
 		const start = parseIso(nextFrom);
 		const end = parseIso(nextTo);
 
@@ -176,14 +162,13 @@ export default function DateRangePicker(
 	}
 
 	return (
-		<div class="date-range" data-selecting={selecting.value ? "true" : undefined}>
+		<div class="date-range">
 			<div class="date-range-head">
 				<button
 					type="button"
 					class="btn btn-icon"
 					aria-label="Mois précédent"
-					onMouseDown={(event) => onNavDown(event, -1)}
-					onMouseEnter={() => onNavEnter(-1)}
+					onClick={() => shiftMonth(-1)}
 				>
 					<ChevronLeft size={16} />
 				</button>
@@ -192,8 +177,7 @@ export default function DateRangePicker(
 					type="button"
 					class="btn btn-icon"
 					aria-label="Mois suivant"
-					onMouseDown={(event) => onNavDown(event, 1)}
-					onMouseEnter={() => onNavEnter(1)}
+					onClick={() => shiftMonth(1)}
 				>
 					<ChevronRight size={16} />
 				</button>
@@ -210,10 +194,7 @@ export default function DateRangePicker(
 							data-in-range={inRange(date) ? "true" : undefined}
 							data-end={rangeEnd && sameDay(date, rangeEnd) ? "true" : undefined}
 							data-start={rangeStart && sameDay(date, rangeStart) ? "true" : undefined}
-							onMouseDown={(event) => {
-								event.preventDefault();
-								onDayDown(date);
-							}}
+							onClick={() => onDayClick(date)}
 							onMouseEnter={() => onDayEnter(date)}
 						>
 							{date.getDate()}

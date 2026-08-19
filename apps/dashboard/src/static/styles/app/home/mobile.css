@@ -1,20 +1,46 @@
-@media (max-width: 640px) {
-	#home {
-		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: auto auto minmax(0, 1fr);
-		grid-template-areas:
-			"toolbar"
-			"error"
-			"list";
+@media (max-width: 1100px) {
+	#home > button {
+		padding: 0;
+
+		position: fixed;
+		inset: 0;
+		z-index: 36;
+
+		background: var(--overlay);
+		border: none;
+
+		cursor: pointer;
 	}
 
+	#home-subjects {
+		width: min(16rem, 85vw);
+
+		padding-top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+		padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 40;
+
+		background: var(--color-bg-elevated);
+		border-right: 1px solid var(--color-border);
+		box-shadow: var(--shadow-md);
+
+		transform: translateX(-100%);
+		transition: transform 0.2s ease;
+	}
+
+	#home-subjects[data-open="true"] {
+		transform: translateX(0);
+	}
+}
+
+@media (max-width: 640px) {
 	#home[data-filters-open="true"] {
 		grid-template-rows: minmax(0, 1fr);
 		grid-template-areas: "toolbar";
-	}
-
-	#home > form > div:first-child > button:first-child {
-		display: inline-flex;
 	}
 
 	#home[data-filters-open="true"] > form {
@@ -28,10 +54,6 @@
 	#home[data-filters-open="true"] > button,
 	#home[data-filters-open="true"] > .error {
 		display: none;
-	}
-
-	#home > form > div:first-child {
-		padding: var(--space-3) var(--space-4);
 	}
 
 	#home > form > #home-filters {
@@ -65,44 +87,6 @@
 		display: none;
 	}
 
-	#home > button {
-		display: block;
-
-		padding: 0;
-
-		position: fixed;
-		inset: 0;
-		z-index: 35;
-
-		background: var(--overlay);
-		border: none;
-
-		cursor: pointer;
-	}
-
-	#home-subjects {
-		width: min(16rem, 85vw);
-
-		padding-top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
-
-		position: fixed;
-		top: 0;
-		bottom: 0;
-		left: 0;
-		z-index: 40;
-
-		background: var(--color-bg-elevated);
-		border-right: 1px solid var(--color-border);
-		box-shadow: var(--shadow-md);
-
-		transform: translateX(-100%);
-		transition: transform 0.2s ease;
-	}
-
-	#home-subjects[data-open="true"] {
-		transform: translateX(0);
-	}
-
 	#home > form > div:first-child > .btn-primary {
 		width: 3.25rem;
 		min-width: 3.25rem;
@@ -112,7 +96,7 @@
 
 		position: fixed;
 		right: var(--space-4);
-		bottom: var(--space-4);
+		bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
 		z-index: 30;
 
 		border-radius: 999px;
@@ -128,29 +112,10 @@
 	}
 
 	#home > article {
-		padding: var(--space-3) var(--space-4);
-		padding-bottom: calc(var(--space-4) + 3.25rem);
+		padding-bottom: calc(var(--space-4) + 3.25rem + env(safe-area-inset-bottom, 0px));
 	}
 
 	#root[data-recording] #home > article {
 		padding-bottom: var(--space-3);
-	}
-
-	.lecture-row {
-		grid-template-columns: minmax(0, 1fr) 4rem 6rem;
-	}
-
-	.lecture-tags:empty {
-		display: none;
-	}
-
-	.lecture-tags:not(:empty) {
-		grid-column: 1 / -1;
-
-		justify-content: flex-start;
-	}
-
-	#home > .error {
-		padding: var(--space-3) var(--space-4);
 	}
 }

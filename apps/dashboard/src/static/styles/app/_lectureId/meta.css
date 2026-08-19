@@ -104,6 +104,10 @@
 		border-radius: var(--radius-sm);
 	}
 
+	#lecture[data-info-open] #lecture-meta > dl > div:last-child:nth-child(odd) {
+		grid-column: 1 / -1;
+	}
+
 	#lecture[data-info-open] #lecture-meta > dl dt {
 		font-size: 0.65rem;
 	}
@@ -112,13 +116,7 @@
 		font-weight: 500;
 	}
 
-	#lecture[data-info-open] #lecture-meta > h2 {
-		width: 100%;
-	}
-
 	#lecture[data-info-open] #lecture-meta > ul {
-		width: 100%;
-
 		display: flex;
 		flex-direction: row;
 		flex-wrap: wrap;

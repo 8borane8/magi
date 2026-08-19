@@ -61,7 +61,7 @@ export type ProcessStreamEvent =
 export type ChatLiveEvent =
 	| { type: "init"; startedAt: number; text: string }
 	| { type: "delta"; text: string }
-	| { type: "done"; data: ChatLiveMessage }
+	| { type: "done"; data?: ChatLiveMessage }
 	| { type: "error"; error: string };
 
 type ChatLiveMessage = {

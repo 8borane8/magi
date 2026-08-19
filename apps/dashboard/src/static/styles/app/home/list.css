@@ -42,12 +42,15 @@
 	text-decoration: none;
 
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, auto) 4rem 6rem;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		"title title status"
+		"time tags tags";
 	align-items: center;
 	column-gap: var(--space-2);
-	row-gap: var(--space-2);
+	row-gap: var(--space-1);
 
-	padding: var(--space-2) 0;
+	padding: var(--space-3) 0;
 }
 
 .lecture-row[aria-current="true"] {
@@ -76,21 +79,28 @@ div.lecture-row {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 
+	grid-area: title;
+
 	overflow: hidden;
 }
 
 .lecture-row > time {
-	width: 4rem;
+	width: auto;
 
 	color: var(--color-text-muted);
 	font-variant-numeric: tabular-nums;
-	text-align: center;
+	text-align: left;
+	white-space: nowrap;
 
-	justify-self: center;
+	grid-area: time;
+	justify-self: start;
 }
 
 .lecture-row > .pill[data-status] {
-	justify-self: center;
+	white-space: nowrap;
+
+	grid-area: status;
+	justify-self: end;
 }
 
 .lecture-stream {
@@ -112,14 +122,86 @@ div.lecture-row {
 }
 
 .lecture-tags {
+	min-width: 0;
+	max-width: 100%;
+
 	display: flex;
 	flex-direction: row;
-	justify-content: flex-end;
+	justify-content: flex-start;
 	align-items: center;
-	flex-wrap: wrap;
-	gap: var(--space-2);
+	flex-wrap: nowrap;
+	gap: var(--space-1);
+	grid-area: tags;
+
+	overflow: hidden;
+}
+
+.lecture-tags:empty {
+	display: none;
 }
 
 .lecture-tags > .pill {
-	flex-shrink: 0;
+	max-width: 7.5rem;
+	min-width: 0;
+
+	flex-shrink: 1;
+
+	overflow: hidden;
+}
+
+.lecture-tags > .pill > span:not(.swatch) {
+	min-width: 0;
+
+	text-overflow: ellipsis;
+	white-space: nowrap;
+
+	overflow: hidden;
+}
+
+@media (min-width: 1101px) {
+	.lecture-row {
+		grid-template-columns: minmax(0, 1fr) auto 4.5rem auto;
+		grid-template-areas: none;
+		column-gap: var(--space-3);
+		row-gap: 0;
+
+		padding: var(--space-2) 0;
+	}
+
+	.lecture-row > strong,
+	.lecture-row > time,
+	.lecture-row > .pill[data-status],
+	.lecture-tags {
+		grid-area: auto;
+	}
+
+	.lecture-row > time {
+		width: 4.5rem;
+
+		text-align: center;
+
+		justify-self: center;
+	}
+
+	.lecture-row > .pill[data-status] {
+		justify-self: end;
+	}
+
+	.lecture-tags {
+		max-width: none;
+
+		justify-content: flex-end;
+
+		overflow: visible;
+	}
+
+	.lecture-tags:empty {
+		display: flex;
+	}
+
+	.lecture-tags > .pill {
+		max-width: none;
+
+		flex-shrink: 0;
+	}
 }

@@ -2,12 +2,13 @@ export type ChatLiveEvent =
 	| { type: "idle" }
 	| { type: "init"; startedAt: number; text: string }
 	| { type: "delta"; text: string }
-	| { type: "done"; data: unknown }
+	| { type: "done"; data?: unknown }
 	| { type: "error"; error: string };
 
 type Hub = {
 	startedAt: number;
 	text: string;
+	abort: AbortController;
 	listeners: Set<(event: ChatLiveEvent) => void>;
 };
 
@@ -21,19 +22,25 @@ export function isBusy(lectureId: string): boolean {
 	return hubs.has(lectureId);
 }
 
-export function startChat(lectureId: string): boolean {
-	if (hubs.has(lectureId)) return false;
+export function startChat(lectureId: string): AbortSignal | null {
+	if (hubs.has(lectureId)) return null;
+	const abort = new AbortController();
 	hubs.set(lectureId, {
 		startedAt: Date.now(),
 		text: "",
+		abort,
 		listeners: new Set(),
 	});
-	return true;
+	return abort.signal;
+}
+
+export function abortChat(lectureId: string): void {
+	hubs.get(lectureId)?.abort.abort();
 }
 
 export function appendDelta(lectureId: string, text: string): void {
 	const hub = hubs.get(lectureId);
-	if (!hub) return;
+	if (!hub || hub.abort.signal.aborted) return;
 	hub.text += text;
 	emit(hub, { type: "delta", text });
 }

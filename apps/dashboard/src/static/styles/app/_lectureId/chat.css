@@ -98,25 +98,37 @@
 	padding: var(--space-6) var(--space-5);
 }
 
-#lecture-chat > ol {
+#lecture-chat > div:has(> ol) {
 	min-height: 0;
 	flex: 1 1 auto;
+
+	display: flex;
+	flex-direction: column-reverse;
+	justify-content: flex-start;
+	align-items: stretch;
+	flex-wrap: nowrap;
+
+	overflow: auto;
+}
+
+#lecture-chat ol {
+	width: 100%;
 
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
 	align-items: stretch;
 	flex-wrap: nowrap;
+	flex-shrink: 0;
 	gap: var(--space-3);
 
 	margin: 0;
 	padding: var(--space-4);
 
-	overflow: auto;
 	list-style: none;
 }
 
-#lecture-chat > ol > li {
+#lecture-chat ol > li {
 	min-width: 0;
 	max-width: 90%;
 
@@ -142,7 +154,7 @@
 	border-radius: var(--radius-md);
 }
 
-#lecture-chat > ol > li::before {
+#lecture-chat ol > li::before {
 	color: var(--color-text-muted);
 	font-size: 0.65rem;
 	font-weight: 600;
@@ -152,24 +164,24 @@
 	content: "Prof";
 }
 
-#lecture-chat > ol > li[data-role="user"] {
+#lecture-chat ol > li[data-role="user"] {
 	align-self: flex-end;
 
 	background: var(--color-accent-soft);
 	border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
 }
 
-#lecture-chat > ol > li[data-role="user"]::before {
+#lecture-chat ol > li[data-role="user"]::before {
 	text-align: right;
 
 	content: "Toi";
 }
 
-#lecture-chat > ol > li[data-role="assistant"] {
+#lecture-chat ol > li[data-role="assistant"] {
 	align-self: flex-start;
 }
 
-#lecture-chat > ol > li[data-pending] {
+#lecture-chat ol > li[data-pending] {
 	align-self: flex-start;
 
 	color: var(--color-text-muted);
@@ -178,17 +190,17 @@
 	border-style: dashed;
 }
 
-#lecture-chat > ol > li[data-pending]::before {
+#lecture-chat ol > li[data-pending]::before {
 	content: "Prof";
 }
 
-#lecture-chat > ol > li[data-pending] > time {
+#lecture-chat ol > li[data-pending] > time {
 	color: var(--color-text-muted);
 	font-size: 0.7rem;
 	font-variant-numeric: tabular-nums;
 }
 
-#lecture-chat > ol > li > p {
+#lecture-chat ol > li > p {
 	color: inherit;
 	font-size: inherit;
 	line-height: inherit;
@@ -199,28 +211,28 @@
 	overflow-wrap: anywhere;
 }
 
-#lecture-chat > ol > li > .markdown {
+#lecture-chat ol > li > .markdown {
 	font-size: inherit;
 	line-height: inherit;
 }
 
-#lecture-chat > ol > li > .markdown p,
-#lecture-chat > ol > li > .markdown li {
+#lecture-chat ol > li > .markdown p,
+#lecture-chat ol > li > .markdown li {
 	font-size: inherit;
 	line-height: inherit;
 }
 
-#lecture-chat > ol > li[data-role="assistant"]:has(.diagram) {
+#lecture-chat ol > li[data-role="assistant"]:has(.diagram) {
 	max-width: 100%;
 }
 
-#lecture-chat > ol > li > .markdown .diagram {
+#lecture-chat ol > li > .markdown .diagram {
 	white-space: normal;
 	word-break: normal;
 	overflow-wrap: normal;
 }
 
-#lecture-chat > ol > li[data-role="user"] > ul {
+#lecture-chat ol > li[data-role="user"] > ul {
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
@@ -234,7 +246,7 @@
 	list-style: none;
 }
 
-#lecture-chat > ol > li[data-role="user"] > ul > li > img {
+#lecture-chat ol > li[data-role="user"] > ul > li > img {
 	width: 100%;
 	height: auto;
 	max-height: 12rem;
@@ -244,8 +256,8 @@
 	object-fit: cover;
 }
 
-#lecture-chat > ol > li[data-role="user"] > ul > li[data-kind="pdf"] > a,
-#lecture-chat > ol > li[data-role="user"] > ul > li[data-kind="text"] > a {
+#lecture-chat ol > li[data-role="user"] > ul > li[data-kind="pdf"] > a,
+#lecture-chat ol > li[data-role="user"] > ul > li[data-kind="text"] > a {
 	color: var(--color-text);
 	font-size: var(--text-sm);
 	font-weight: 500;
@@ -518,7 +530,7 @@
 	flex-shrink: 0;
 }
 
-#lecture-chat[data-full] > ol,
+#lecture-chat[data-full] ol,
 #lecture-chat[data-full] > form,
 #lecture-chat[data-full] > p {
 	padding-inline: max(var(--space-4), calc((100% - 42rem) / 2));

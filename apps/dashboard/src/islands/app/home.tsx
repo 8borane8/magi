@@ -57,7 +57,7 @@ function lectureRowInner(lecture: LectureRow) {
 				{tags.map((tag) => (
 					<span class="pill" key={tag.id}>
 						<span class="swatch" style={{ background: tag.color }}></span>
-						{tag.name}
+						<span>{tag.name}</span>
 					</span>
 				))}
 			</span>

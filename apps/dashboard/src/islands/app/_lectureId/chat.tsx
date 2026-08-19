@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, Maximize2, Paperclip, Send, Trash2, X } from "lucide-preact";
+import { ArrowLeft, FileText, Maximize2, Paperclip, Send, Square, Trash2, X } from "lucide-preact";
 import { useSignal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 
@@ -63,7 +63,6 @@ export default function LectureChat({
 	const dropping = useSignal(false);
 	const think = useSignal(false);
 	const error = useSignal<string | null>(null);
-	const listRef = useRef<HTMLOListElement>(null);
 	const dialogRef = useRef<HTMLDialogElement>(null);
 	const fileRef = useRef<HTMLInputElement>(null);
 	const waitAbort = useRef<AbortController | null>(null);
@@ -108,8 +107,8 @@ export default function LectureChat({
 				}
 				if (event.type === "done") {
 					finished = true;
-					const item = event.data as ChatMessageData;
-					if (!messages.value.some((message) => message.id === item.id)) {
+					const item = event.data;
+					if (item && !messages.value.some((message) => message.id === item.id)) {
 						messages.value = [...messages.value, item];
 					}
 					streamText.value = "";
@@ -160,11 +159,6 @@ export default function LectureChat({
 			revokeDraft(files.value);
 		};
 	}, []);
-
-	useEffect(() => {
-		const list = listRef.current;
-		if (list) list.scrollTop = list.scrollHeight;
-	}, [count, sending.value, pending.value, streamText.value]);
 
 	useEffect(() => {
 		if (!sending.value) return;
@@ -228,6 +222,19 @@ export default function LectureChat({
 		event.preventDefault();
 		dropping.value = false;
 		addFiles(filesFromDataTransfer(event.dataTransfer));
+	}
+
+	async function onStop() {
+		if (!sending.value || !nodeUrl) return;
+		try {
+			const response = await fetch(
+				`${nodeUrl.replace(/\/+$/, "")}/lectures/${encodeURIComponent(lectureId)}/chat/stop`,
+				{ method: "POST" },
+			);
+			if (!response.ok) throw new Error("stop_failed");
+		} catch {
+			error.value = "Impossible de stopper.";
+		}
 	}
 
 	async function onSubmit(event: Event) {
@@ -314,7 +321,7 @@ export default function LectureChat({
 	}
 
 	function onKeyDown(event: KeyboardEvent) {
-		if (event.key !== "Enter" || event.shiftKey) return;
+		if (event.key !== "Enter" || event.shiftKey || sending.value) return;
 		event.preventDefault();
 		(event.currentTarget as HTMLTextAreaElement).form?.requestSubmit();
 	}
@@ -377,17 +384,19 @@ export default function LectureChat({
 			)}
 
 			{(count > 0 || sending.value) && (
-				<ol ref={listRef}>
-					{messages.value.map((message) => (
-						<ChatMessage key={message.id} message={message} srcPrefix={srcPrefix} />
-					))}
-					{sending.value && (
-						<li data-role="assistant" data-pending="">
-							<p>{streamText.value || (think.value ? "Le prof réfléchit..." : "Le prof écrit...")}</p>
-							<time>{formatDuration(Math.max(0, Date.now() - sendStartedAt.value))}</time>
-						</li>
-					)}
-				</ol>
+				<div>
+					<ol>
+						{messages.value.map((message) => (
+							<ChatMessage key={message.id} message={message} srcPrefix={srcPrefix} />
+						))}
+						{sending.value && (
+							<li data-role="assistant" data-pending="">
+								<p>{streamText.value || (think.value ? "Le prof réfléchit..." : "Le prof écrit...")}</p>
+								<time>{formatDuration(Math.max(0, Date.now() - sendStartedAt.value))}</time>
+							</li>
+						)}
+					</ol>
+				</div>
 			)}
 
 			<form onSubmit={onSubmit}>
@@ -396,7 +405,6 @@ export default function LectureChat({
 					rows={3}
 					maxLength={4000}
 					placeholder="Écrire au prof..."
-					disabled={sending.value}
 					value={draft.value}
 					onInput={(event) => {
 						draft.value = (event.currentTarget as HTMLTextAreaElement).value;
@@ -416,7 +424,6 @@ export default function LectureChat({
 								<button
 									type="button"
 									class="btn btn-icon"
-									disabled={sending.value}
 									aria-label={`Retirer ${item.file.name}`}
 									onClick={() => removeFile(index)}
 								>
@@ -434,7 +441,6 @@ export default function LectureChat({
 							accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,.pdf,.txt"
 							multiple
 							hidden
-							disabled={sending.value}
 							onChange={(event) => {
 								addFiles(event.currentTarget.files || []);
 								event.currentTarget.value = "";
@@ -443,7 +449,7 @@ export default function LectureChat({
 						<button
 							type="button"
 							class="btn btn-icon"
-							disabled={sending.value || files.value.length >= MAX_FILES}
+							disabled={files.value.length >= MAX_FILES}
 							aria-label="Joindre un fichier"
 							onClick={() => fileRef.current?.click()}
 						>
@@ -453,7 +459,6 @@ export default function LectureChat({
 							<input
 								type="checkbox"
 								checked={think.value}
-								disabled={sending.value}
 								onChange={(event) => {
 									const on = (event.currentTarget as HTMLInputElement).checked;
 									think.value = on;
@@ -468,15 +473,29 @@ export default function LectureChat({
 						</label>
 					</li>
 					<li>
-						<button
-							type="submit"
-							class="btn btn-primary"
-							disabled={sending.value || !canSend}
-							aria-label="Envoyer"
-						>
-							<Send size={16} aria-hidden="true" />
-							<span>{sending.value ? "Envoi..." : "Envoyer"}</span>
-						</button>
+						{sending.value
+							? (
+								<button
+									type="button"
+									class="btn btn-primary"
+									aria-label="Stopper"
+									onClick={() => void onStop()}
+								>
+									<Square size={14} fill="currentColor" stroke="none" aria-hidden="true" />
+									<span>Stopper</span>
+								</button>
+							)
+							: (
+								<button
+									type="submit"
+									class="btn btn-primary"
+									disabled={!canSend}
+									aria-label="Envoyer"
+								>
+									<Send size={16} aria-hidden="true" />
+									<span>Envoyer</span>
+								</button>
+							)}
 					</li>
 				</menu>
 			</form>

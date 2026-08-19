@@ -12,6 +12,7 @@ type ChatReplyInput = {
 	lecture: Lecture;
 	history: Array<{ role: ChatRole; content: string; attachments?: ChatAttachment[] | null }>;
 	think?: boolean;
+	signal?: AbortSignal;
 };
 
 function encodeBase64(bytes: Uint8Array): string {
@@ -97,5 +98,11 @@ async function buildMessages(input: ChatReplyInput): Promise<{
 
 export async function* replyStream(input: ChatReplyInput): AsyncGenerator<string> {
 	const { messages, model } = await buildMessages(input);
-	yield* chatStream(messages, { model, temperature: 0.5, think: input.think });
+	if (input.signal?.aborted) return;
+	yield* chatStream(messages, {
+		model,
+		temperature: 0.5,
+		think: input.think,
+		signal: input.signal,
+	});
 }

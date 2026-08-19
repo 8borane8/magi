@@ -7,12 +7,12 @@
 	min-height: 0;
 
 	display: grid;
-	grid-template-columns: 16rem minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr);
 	grid-template-rows: auto auto minmax(0, 1fr);
 	grid-template-areas:
-		"toolbar toolbar"
-		"error error"
-		"subjects list";
+		"toolbar"
+		"error"
+		"list";
 	flex: 1 1 auto;
 
 	overflow: hidden;
@@ -41,19 +41,13 @@
 	flex-wrap: nowrap;
 	gap: var(--space-2);
 
-	padding: var(--space-3) var(--space-6);
+	padding: var(--space-3) var(--space-4);
 
 	border-bottom: 1px solid var(--color-border);
 }
 
 #home > form > div:first-child > .btn-primary {
-	height: 2.25rem;
-
-	padding: 0 var(--space-3);
-}
-
-#home > form > div:first-child > .btn-primary > span {
-	display: inline;
+	flex-shrink: 0;
 }
 
 #root[data-recording] #home > form > div:first-child > .btn-primary {
@@ -106,28 +100,14 @@
 #home > .error {
 	grid-area: error;
 
-	padding: var(--space-3) var(--space-6);
-}
-
-#home > form > div:first-child > button:first-child {
-	display: none;
-}
-
-#home > button {
-	display: none;
+	padding: var(--space-3) var(--space-4);
 }
 
 #home-subjects {
 	grid-area: subjects;
-	width: 16rem;
 	min-height: 0;
 
-	flex-shrink: 0;
-
-	padding: var(--space-4) 0;
-
 	overflow: auto;
-	border-right: 1px solid var(--color-border);
 }
 
 #home-subjects > h2 {
@@ -191,11 +171,59 @@
 	flex-wrap: nowrap;
 	gap: var(--space-5);
 
-	padding: var(--space-4) var(--space-5);
+	padding: var(--space-3) var(--space-4);
 
 	overflow: auto;
 }
 
 #home > article > p {
 	color: var(--color-text-muted);
+}
+
+@media (min-width: 1101px) {
+	#home {
+		grid-template-columns: 16rem minmax(0, 1fr);
+		grid-template-areas:
+			"toolbar toolbar"
+			"error error"
+			"subjects list";
+	}
+
+	#home > form > div:first-child {
+		padding: var(--space-3) var(--space-6);
+	}
+
+	#home > form > #home-filters {
+		right: var(--space-6);
+	}
+
+	#home > form > div:first-child > button:first-child,
+	#home > button {
+		display: none;
+	}
+
+	#home > .error {
+		padding: var(--space-3) var(--space-6);
+	}
+
+	#home-subjects {
+		width: 16rem;
+		flex-shrink: 0;
+
+		padding: var(--space-4) 0;
+
+		border-right: 1px solid var(--color-border);
+	}
+
+	#home > article {
+		padding: var(--space-4) var(--space-5);
+	}
+}
+
+@media (min-width: 641px) {
+	#home > form > div:first-child > .btn-primary {
+		height: 2.25rem;
+
+		padding: 0 var(--space-3);
+	}
 }

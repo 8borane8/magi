@@ -28,12 +28,32 @@ function chatError(error: unknown): { status: number; error: string } {
 	return { status: 502, error: "ai_unavailable" };
 }
 
+async function saveReply(lecture: Lecture, answer: string, signal: AbortSignal): Promise<void> {
+	const content = answer.trim();
+	if (content) {
+		const assistant = await ChatMessage.create({
+			lectureId: lecture.id,
+			role: ChatRole.ASSISTANT,
+			content,
+			attachments: null,
+		});
+		chatLive.endChat(lecture.id, { type: "done", data: publicMessage(assistant) });
+		return;
+	}
+	if (signal.aborted) {
+		chatLive.endChat(lecture.id, { type: "done" });
+		return;
+	}
+	throw new Error("empty_reply");
+}
+
 async function generateReply(
 	lecture: Lecture,
 	user: ChatMessage,
 	previous: ChatMessage[],
 	attachments: ChatAttachment[],
 	think: boolean,
+	signal: AbortSignal,
 ): Promise<void> {
 	let answer = "";
 	try {
@@ -41,6 +61,7 @@ async function generateReply(
 			const piece of replyStream({
 				lecture,
 				think,
+				signal,
 				history: [...previous, user].map((item) => ({
 					role: item.role,
 					content: item.content,
@@ -51,18 +72,12 @@ async function generateReply(
 			answer += piece;
 			chatLive.appendDelta(lecture.id, piece);
 		}
-
-		if (!answer.trim()) throw new Error("empty_reply");
-
-		const assistant = await ChatMessage.create({
-			lectureId: lecture.id,
-			role: ChatRole.ASSISTANT,
-			content: answer.trim(),
-			attachments: null,
-		});
-
-		chatLive.endChat(lecture.id, { type: "done", data: publicMessage(assistant) });
+		await saveReply(lecture, answer, signal);
 	} catch (error) {
+		if (signal.aborted) {
+			await saveReply(lecture, answer, signal);
+			return;
+		}
 		console.error(error);
 		await user.destroy();
 		await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
@@ -153,7 +168,8 @@ export default new Router<{ lecture: Lecture }>()
 				attachments: attachments.length ? attachments : null,
 			});
 
-			if (!chatLive.startChat(lecture.id)) {
+			const signal = chatLive.startChat(lecture.id);
+			if (!signal) {
 				await user.destroy();
 				await storage.removeChatFiles(lecture.id, attachments.map((item) => item.path));
 				return res.status(409).json({
@@ -162,7 +178,7 @@ export default new Router<{ lecture: Lecture }>()
 				});
 			}
 
-			void generateReply(lecture, user, previous, attachments, think);
+			void generateReply(lecture, user, previous, attachments, think, signal);
 
 			return res.json({
 				success: true as const,
@@ -178,6 +194,10 @@ export default new Router<{ lecture: Lecture }>()
 			}),
 		},
 	)
+	.post("/:lectureId/chat/stop", (req, res) => {
+		chatLive.abortChat(req.data.lecture.id);
+		return res.json({ success: true as const });
+	})
 	.delete("/:lectureId/chat", async (req, res) => {
 		if (chatLive.isBusy(req.data.lecture.id)) {
 			return res.status(409).json({
