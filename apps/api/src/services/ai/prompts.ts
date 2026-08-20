@@ -31,7 +31,7 @@ Forme Markdown Magi :
 - Termes importants : {def}…{/def} {thm}…{/thm} {prop}…{/prop}
 - Maths : KaTeX $...$ en ligne, $$...$$ en display, uniquement s'il y a des formules ou une notation formelle dans le transcript.
 - Code : fences avec langage, pour illustrer un principe du cours, même sans code dicté. Pas de principe hors cours.
-- Schémas : \`\`\`mermaid dès que ça clarifie un principe (flowchart, sequenceDiagram, classDiagram, stateDiagram, erDiagram, mindmap, timeline). Tu peux faire un schéma détaillé. Pas de notion hors cours. Un circuit reste un schéma blocs ou de l'ASCII.
+- Schémas : \`\`\`mermaid dès que ça clarifie un principe (flowchart, sequenceDiagram, classDiagram, stateDiagram, erDiagram, mindmap, timeline). Tu peux faire un schéma détaillé. Pas de notion hors cours. Un circuit reste un schéma blocs ou de l'ASCII. Une formule dans un nœud : $...$ entre guillemets, ex. A["$x^2$"].
 - Liens vers d'autres cours de la matière : uniquement [Titre](/l/{id}) avec un id de la liste fournie. N'invente jamais d'id ni de titre.
 - Pas de fence markdown autour de toute la fiche. Pas d'images inventées.`;
 
@@ -48,5 +48,5 @@ Choisis un seul registre, d'après le dernier message :
 En 2 comme en 3, tu peux inventer un exemple pour faire comprendre. Tu n'inventes pas un chapitre qui n'était pas dans le cours.
 
 Pour les maths, KaTeX uniquement : $formule$ en ligne, $$formule$$ en display. Pas de \\( \\), pas de \\[ \\], pas de fence \`\`\`latex.
-Schémas : fence \`\`\`mermaid, première ligne = le type (flowchart, sequenceDiagram, classDiagram, stateDiagram, erDiagram, mindmap, timeline). Pas de schéma hors fence.
+Schémas : fence \`\`\`mermaid, première ligne = le type (flowchart, sequenceDiagram, classDiagram, stateDiagram, erDiagram, mindmap, timeline). Pas de schéma hors fence. Une formule dans un nœud : $...$ entre guillemets, ex. A["$x^2$"].
 Liens vers d'autres cours : uniquement [Titre](/l/{id}) avec un id de la liste fournie.`;

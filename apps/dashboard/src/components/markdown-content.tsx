@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "preact/hooks";
 
-import { renderMarkdown } from "../utils/markdown.ts";
+import { extractMermaidMath, type MermaidMath, renderMarkdown, renderTex } from "../utils/markdown.ts";
 
 type MermaidApi = {
 	initialize: (config: Record<string, unknown>) => void;
@@ -79,6 +79,37 @@ function paintSvg(svg: SVGSVGElement): void {
 	}
 }
 
+function injectMermaidMath(svg: SVGSVGElement, maths: MermaidMath[]): void {
+	for (const { id, tex } of maths) {
+		const html = renderTex(tex, false);
+		const walker = document.createTreeWalker(svg, NodeFilter.SHOW_TEXT);
+		const nodes: Text[] = [];
+		while (walker.nextNode()) {
+			const node = walker.currentNode as Text;
+			if (node.nodeValue?.includes(id)) nodes.push(node);
+		}
+		for (const node of nodes) {
+			const parent = node.parentElement;
+			const tag = parent?.tagName.toLowerCase();
+			if (tag === "text" || tag === "tspan") {
+				node.nodeValue = node.nodeValue!.replaceAll(id, tex);
+				continue;
+			}
+			const parts = node.nodeValue!.split(id);
+			const frag = document.createDocumentFragment();
+			for (let i = 0; i < parts.length; i++) {
+				if (parts[i]) frag.append(parts[i]);
+				if (i < parts.length - 1) {
+					const holder = document.createElement("span");
+					holder.innerHTML = html;
+					while (holder.firstChild) frag.append(holder.firstChild);
+				}
+			}
+			node.replaceWith(frag);
+		}
+	}
+}
+
 async function copyCode(button: HTMLButtonElement): Promise<void> {
 	const text = button.closest(".code-block")?.querySelector("pre > code")?.textContent || "";
 	try {
@@ -104,11 +135,15 @@ async function renderDiagrams(root: HTMLElement): Promise<void> {
 		const definition = figure.dataset.definition?.trim();
 		if (!definition || figure.querySelector("svg")) continue;
 		try {
-			const svg = await draw(definition);
+			const { source, maths } = extractMermaidMath(definition);
+			const svg = await draw(source);
 			if (!root.contains(figure)) continue;
 			figure.innerHTML = svg;
 			const drawn = figure.querySelector("svg");
-			if (drawn) paintSvg(drawn);
+			if (drawn) {
+				paintSvg(drawn);
+				if (maths.length) injectMermaidMath(drawn, maths);
+			}
 		} catch {
 			if (root.contains(figure)) failDiagram(figure, definition);
 		}

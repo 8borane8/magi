@@ -18,6 +18,4 @@ WORKDIR /app/apps/dashboard
 
 RUN deno cache src/index.ts
 
-EXPOSE 5000
-
 CMD ["task", "start"]

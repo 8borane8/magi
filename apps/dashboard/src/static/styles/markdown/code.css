@@ -28,7 +28,7 @@
 }
 
 .markdown pre > code {
-	color: var(--color-text);
+	color: var(--color-text-muted);
 	font-size: 0.85em;
 	font-weight: 400;
 	line-height: 1.55;
@@ -123,34 +123,47 @@
 
 .markdown .hljs-comment,
 .markdown .hljs-quote,
-.markdown .hljs-meta,
-.markdown .hljs-doctag {
+.markdown .hljs-code,
+.markdown .hljs-formula {
 	color: var(--color-text-muted);
+	font-style: italic;
 }
 
+.markdown .hljs-doctag,
 .markdown .hljs-keyword,
+.markdown .hljs-meta .hljs-keyword,
+.markdown .hljs-template-tag,
 .markdown .hljs-selector-tag,
 .markdown .hljs-selector-id,
-.markdown .hljs-selector-class {
+.markdown .hljs-selector-class,
+.markdown .hljs-selector-pseudo,
+.markdown .hljs-selector-attr {
 	color: var(--color-accent);
+	font-style: normal;
 }
 
 .markdown .hljs-string,
+.markdown .hljs-meta .hljs-string,
+.markdown .hljs-char.escape_,
 .markdown .hljs-addition {
 	color: var(--color-success);
 }
 
 .markdown .hljs-number,
 .markdown .hljs-literal,
-.markdown .hljs-symbol {
+.markdown .hljs-symbol,
+.markdown .hljs-bullet,
+.markdown .hljs-link {
 	color: var(--color-warning);
 }
 
 .markdown .hljs-title,
+.markdown .hljs-title.class_,
+.markdown .hljs-title.class_.inherited__,
+.markdown .hljs-title.function_,
 .markdown .hljs-section,
 .markdown .hljs-name,
-.markdown .hljs-function,
-.markdown .hljs-class .hljs-title {
+.markdown .hljs-function {
 	color: var(--color-theorem);
 }
 
@@ -160,9 +173,19 @@
 .markdown .hljs-attribute,
 .markdown .hljs-property,
 .markdown .hljs-variable,
+.markdown .hljs-variable.language_,
+.markdown .hljs-variable.constant_,
 .markdown .hljs-template-variable,
-.markdown .hljs-params {
+.markdown .hljs-params,
+.markdown .hljs-tag {
 	color: var(--color-demo);
+}
+
+.markdown .hljs-subst,
+.markdown .hljs-operator,
+.markdown .hljs-punctuation,
+.markdown .hljs-meta {
+	color: var(--color-text);
 }
 
 .markdown .hljs-regexp,

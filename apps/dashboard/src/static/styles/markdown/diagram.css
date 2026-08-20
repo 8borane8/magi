@@ -68,6 +68,10 @@
 	overflow: visible;
 }
 
+.markdown .diagram foreignObject {
+	overflow: visible;
+}
+
 .markdown .diagram :is(text, tspan) {
 	fill: currentColor;
 	stroke: none;
@@ -343,7 +347,7 @@
 	overflow: visible;
 }
 
-.markdown .diagram :is(.nodeLabel, .edgeLabel, .label) * {
+.markdown .diagram :is(.nodeLabel, .edgeLabel, .label) > * {
 	color: inherit;
 	font-family: inherit;
 	font-size: inherit;
@@ -351,4 +355,8 @@
 	line-height: inherit;
 
 	text-align: center;
+}
+
+.markdown .diagram .katex {
+	font-size: 1em;
 }

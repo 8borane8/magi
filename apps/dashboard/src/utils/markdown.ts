@@ -53,7 +53,7 @@ const KATEX = {
 	output: "html" as const,
 };
 
-function renderTex(tex: string, displayMode: boolean): string {
+export function renderTex(tex: string, displayMode: boolean): string {
 	return katex.renderToString(tex.trim(), { ...KATEX, displayMode });
 }
 
@@ -90,6 +90,7 @@ function earliest(src: string, needles: string[]): number | undefined {
 }
 
 const MERMAID_LANG = new Set(["mermaid", "mmd"]);
+const PLAIN_LANG = new Set(["text", "txt", "plain", "plaintext", "output", "console"]);
 const MERMAID_START =
 	/^(?:%%\{[\s\S]*?\}%%\s*|%%[^\n]*\n)*\s*(?:flowchart(?:\s+(?:TD|TB|BT|RL|LR))?|graph\s+(?:TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram(?:-v2)?|stateDiagram(?:-v2)?|erDiagram|mindmap|timeline|gitGraph|pie(?:\s+showData)?|gantt|journey|quadrantChart|sankey(?:-beta)?|xychart(?:-beta)?|block(?:-beta)?|C4Context|requirementDiagram|packet(?:-beta)?|kanban|architecture(?:-beta)?)\b/;
 
@@ -99,7 +100,9 @@ function mermaidSource(text: string): string {
 
 function isMermaidFence(language: string, source: string): boolean {
 	if (MERMAID_LANG.has(language)) return true;
-	if (language && language !== "text" && language !== "txt" && language !== "plain") return false;
+	if (language && language !== "text" && language !== "txt" && language !== "plain" && language !== "plaintext") {
+		return false;
+	}
 	return MERMAID_START.test(source);
 }
 
@@ -116,7 +119,9 @@ function highlightCode(text: string, lang: string | undefined): string {
 	let html = escapeHtml(text);
 	try {
 		if (language && hljs.getLanguage(language)) {
-			html = hljs.highlight(text, { language }).value;
+			html = hljs.highlight(text, { language, ignoreIllegals: true }).value;
+		} else if (!PLAIN_LANG.has(language) && text.trim()) {
+			html = hljs.highlightAuto(text).value;
 		}
 	} catch {
 		/* keep escaped */
@@ -352,6 +357,28 @@ marked.use({
 		},
 	},
 });
+
+export type MermaidMath = { id: string; tex: string };
+
+export function extractMermaidMath(source: string): { source: string; maths: MermaidMath[] } {
+	if (!source.includes("$") && !source.includes("\\(")) {
+		return { source, maths: [] };
+	}
+
+	const maths: MermaidMath[] = [];
+	const replaced = source.replace(
+		/\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$|\\\(([\s\S]+?)\\\)/g,
+		(full, display, inline, parens) => {
+			const tex = String(display ?? inline ?? parens ?? "").trim();
+			if (!tex) return full;
+			const id = `ZMATH${String(maths.length).padStart(2, "0")}Z`;
+			const token = id + "w".repeat(Math.max(0, tex.length - id.length));
+			maths.push({ id: token, tex });
+			return token;
+		},
+	);
+	return { source: replaced, maths };
+}
 
 export function renderMarkdown(source: string): string {
 	return marked.parse(source, { async: false }) as string;

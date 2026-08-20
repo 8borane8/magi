@@ -30,6 +30,4 @@ WORKDIR /app/apps/api
 
 RUN deno cache src/index.ts
 
-EXPOSE 5050
-
 CMD ["deno", "task", "start"]
